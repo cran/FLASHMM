@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 # Method
 
-## LMM estimation and inference
+## LMM parameter estimation and hypothesis testing
 
 Consider the linear mixed-effects model (LMM) as expressed below [@Searle2006]
 \begin{equation}
@@ -54,12 +54,12 @@ $$var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},$$
 where $\theta = (\theta_0, \theta_1,\ldots, \theta_K)$, $\theta_0 = \sigma^2$, $\theta_k = \sigma^2_k$, and
 $$V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.$$
 
-Estimating the variance components by either MLE or REML is a difficult numerical problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
+Estimating the variance components by either MLE or REML is a numerical optimization problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
 \begin{equation}
 (\#eq:gradient)
 \theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
 \end{equation}
-where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information, see Supplementary Materials of the manuscript for the details. 
+where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. 
 
 The hypotheses for testing fixed effects and variance components can be respectively defined as
 $$
@@ -68,9 +68,9 @@ $$
 $$
 H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
 $$
-where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). Note that the negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$, is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and no random effects are needed.
+where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and no random effects are needed.
 
-Allowing the parameters of variance components to take negative value avoids the zero boundary problem in hypothesis testing for the variance components. Consequently, the asymptotic properties of the maximum likelihood estimation hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
+Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimation at the null hypothesis hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
 \begin{equation}
 (\#eq:tcoef)
 T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
@@ -99,47 +99,46 @@ ZX = Z^TX, ~ZY = Z^TY^T, ~ZZ = Z^TZ,\\
 Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{array}
 \end{equation}
-where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See Supplemental Materials of the manuscript for details. 
+where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.
 
 
 # FLASHMM
 
-FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, we should use lmm instead of lmmfit. That is, we precompute the summary-level data by \@ref(eq:sdata) or sslmm function in FLASHMM package, and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
+FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
 
-In summary, FLASHMM package provides the following functions.
+In summary, FLASHMM package provides the following main functions.
 
 * lmm: fit LMM using summary-level data.
 * lmmfit: fit LMM using cell-level data.
 * lmmtest: perform statistical tests on the fixed effects and their contrasts.
-* sslmm: compute the summary-level data using cell-level data.
 * simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
 
 
 ## Quick start
 
 ```{r echo = TRUE, results = "hide", message = FALSE}
-#Install FLASHMM from Github.
+##Install FLASHMM from CRAN.
+# install.packages("FLASHMM")
+##Install FLASHMM from Github.
 devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
-#Load the package.
+##Load the package.
 library(FLASHMM)
 ```
 
-### Simulating a scRNA-seq dataset by simuRNAseq
+### Simulating a scRNA-seq dataset
 
-Simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
+Use simuRNAseq function to simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
 
 ```{r dataset, message = FALSE}
 set.seed(2412)
-dat <- simuRNAseq(nGenes = 50, nCells = 1000, 
-                  nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
-
+dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
 names(dat)
-##
 
 #counts and meta data
 counts <- dat$counts
 metadata <- dat$metadata
+head(metadata)
 rm(dat)
 ```
 
@@ -155,13 +154,13 @@ Y <- log(counts + 1)
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
 Z <- model.matrix(~ 0 + sam, data = metadata)
 d <- ncol(Z)
-##
 
 ##(2) LMM fitting
-##Fit LMM by lmmfit using cell-level data.
+
+##Option 1: fit LMM by lmmfit using cell-level data.
 fit <- lmmfit(Y, X, Z, d = d)
 
-##Fit LMM by lmm using summary-level data computed as follows.
+##Option 2: fit LMM by lmm using summary-level data.
 ##- Computing summary statistics
 n <- nrow(X)
 XX <- t(X)%*%X; XY <- t(Y%*%X)
@@ -171,29 +170,31 @@ Ynorm <- rowSums(Y*Y)
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
 
 identical(fit, fitss)
-##
-
-##Fit LMM by lmm using summary-level data computed by sslmm.
-##- Computing summary statistics
-ss <- sslmm(X, Y, Z)
-##- Fitting LMM
-fitss <- lmm(summary.stats = ss, d = d)
-
-identical(fit, fitss)
-##
 
 ##(3) Hypothesis tests
+##Testing coefficients (fixed effects)
 test <- lmmtest(fit)
 #head(test)
 
-##t-values
-all(t(fit$t) == test[, grep("_t", colnames(test))])
-fit$t[, 1:5]
+##The testing t-value and p-values are also provided in the LMM fit.
+range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
+#fit$coef[, 1:4]
+#fit$t[, 1:4]
+fit$p[, 1:4]
 ##
 
-##p-values
-all(t(fit$p) == test[, grep("_p", colnames(test))])
-fit$p[, 1:5]
+##Testing contrasts
+##We can make comparisons using contrasts. For example, 
+##the effects of treatment B vs A in all clusters can be tested 
+##using the contrast constructed as follows:
+ct <- numeric(ncol(X))
+names(ct) <- colnames(X)
+index <- grep("B", colnames(X))
+ct[index] <- 1/length(index)
+ct
+test <- lmmtest(fit, contrast = ct)
+head(test)
+
 ```
 
 
@@ -211,6 +212,15 @@ Note that the simuRNAseq function can also generate the scRNA-seq dataset withou
 ### Preparing reference dataset
 
 To load the PBMC dataset, we need ExperimentHub package.
+
+```{r, include = TRUE, echo = TRUE, message = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (!requireNamespace("ExperimentHub", quietly = TRUE))
+    BiocManager::install("ExperimentHub")
+if (!requireNamespace("SingleCellExperiment", quietly = TRUE))
+    BiocManager::install("SingleCellExperiment")
+```
 
 ```{r Reference dataset, echo = TRUE, message = FALSE}
 library(ExperimentHub)
@@ -301,6 +311,7 @@ dat$counts <- NULL #Remove the counts.
 
 ##Design matrix for fixed effects
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$meta)
+colnames(X) <- gsub("cls", "", colnames(X))
 colnames(X) <- gsub("\\+", "p", colnames(X))
 colnames(X) <- gsub(" ", "_", colnames(X))
 
@@ -316,14 +327,14 @@ d <- ncol(Z)
 
 ```{r LMM fitting, echo = TRUE, message = FALSE, warning = FALSE}
   
-##(1) Fit LMM by cell-level data.
+##Option 1: fit LMM by cell-level data.
 max.iter <- 100
 epsilon <- 1e-5
 fit <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
-str(fit)
+names(fit)
 ##
 
-##(2) Fit LMM by summary-level data.
+##Option 2: fit LMM by summary-level data.
 ##- Compute the summary-level data.
 n <- nrow(X)
 XX <- t(X)%*%X
@@ -344,7 +355,8 @@ rm(fitss)
 ##Test the treatment effect within all cell-types.
 ##- Construct a contrast by summing the treatment effects across cell-types.
 contrast <- cbind("trt" = numeric(nrow(fit$coef)))
-contrast[grep(":", rownames(fit$coef)), ] <- 1
+index <- grep(":", rownames(fit$coef))
+contrast[index, ] <- 1/length(index)
 
 ##- Test the contrast.
 test <- lmmtest(fit, contrast = contrast)
@@ -369,25 +381,25 @@ sum(p <= 0.05)
 ##
 
 ##(3) The DE genes specific to a cell-type
-##Coefficients and p-values for the genes specific to a cell-type.
+##Coefficients, t-values, and p-values for the genes specific to a cell-type.
 index <- grep(":", rownames(fit$coef))
-beta <- t(fit$coef[index, cvg])
-p <- t(fit$p[index, cvg])
+ce <- fit$coef[index, cvg]
+tv <- fit$t[index, cvg]
+pv <- fit$p[index, cvg]
+
+out <- data.frame(
+	gene = rep(colnames(ce), nrow(ce)), 
+	cluster = rep(rownames(ce), each = ncol(ce)),
+	coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
 
 ##Adjust p-values by FDR.
-padj <- matrix(p.adjust(c(p), method = "fdr"), nrow = nrow(p), ncol = ncol(p))
+out$FDR <- p.adjust(out$p, method = "fdr")
 
-##The DE genes specific to a cell cluster with FDR < 0.05.
-degenes <- NULL
-for (j in 1:ncol(p)){
-  i <- (padj[, j] < 0.05)
-  if (sum(i) > 0) degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j], FDR = padj[i, j]))
-}
-rownames(degenes) <- NULL
-degenes
-
-##The simulated DE genes
-dat$DEgenes
+##The top DE genes
+##The DE genes with FDR < 0.05
+out <- out[order(out$p), ]
+rownames(out) <- NULL
+out[out$FDR <= 0.05, ]
 
 sessionInfo()
 

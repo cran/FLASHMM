@@ -12,7 +12,7 @@
 
 <meta name="author" content="Changjiang Xu, Delaram Pouyabahar, Veronique Voisin, and Gary D. Bader" />
 
-<meta name="date" content="2025-01-12" />
+<meta name="date" content="2025-03-11" />
 
 <title>Single-cell differential expression analysis with FLASHMM</title>
 
@@ -361,7 +361,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Single-cell differential expression analysis with FLASHMM</h1>
 <h4 class="author">Changjiang Xu, Delaram Pouyabahar, Veronique Voisin, and Gary D. Bader</h4>
-<h4 class="date">January 12, 2025</h4>
+<h4 class="date">March 11, 2025</h4>
 <div class="abstract">
 <p class="abstract">Abstract</p>
 FLASHMM is a package for analysis of single-cell differential expression (DE) using a linear mixed-effects model (LMM). The mixed-effects models have become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability. The classic LMM estimation method faces limitations of speed and computer memory in analysis of large scale scRNA-seq data. The package FLASHMM provides a fast and scalable method to address the scalability of the LMM estimation. FLASHMM is fast and requires less computer memory to fit the LMM. This vignette describes the method for LMM estimation and inference and the R functions for implementing the method, and demonstrates the use of the package via an example.
@@ -372,14 +372,14 @@ FLASHMM is a package for analysis of single-cell differential expression (DE) us
 <ul>
 <li><a href="#method" id="toc-method"><span class="toc-section-number">1</span> Method</a>
 <ul>
-<li><a href="#lmm-estimation-and-inference" id="toc-lmm-estimation-and-inference"><span class="toc-section-number">1.1</span> LMM estimation and inference</a></li>
+<li><a href="#lmm-parameter-estimation-and-hypothesis-testing" id="toc-lmm-parameter-estimation-and-hypothesis-testing"><span class="toc-section-number">1.1</span> LMM parameter estimation and hypothesis testing</a></li>
 <li><a href="#fast-and-scalable-algorithm" id="toc-fast-and-scalable-algorithm"><span class="toc-section-number">1.2</span> Fast and scalable algorithm</a></li>
 </ul></li>
 <li><a href="#flashmm" id="toc-flashmm"><span class="toc-section-number">2</span> FLASHMM</a>
 <ul>
 <li><a href="#quick-start" id="toc-quick-start"><span class="toc-section-number">2.1</span> Quick start</a>
 <ul>
-<li><a href="#simulating-a-scrna-seq-dataset-by-simurnaseq" id="toc-simulating-a-scrna-seq-dataset-by-simurnaseq"><span class="toc-section-number">2.1.1</span> Simulating a scRNA-seq dataset by simuRNAseq</a></li>
+<li><a href="#simulating-a-scrna-seq-dataset" id="toc-simulating-a-scrna-seq-dataset"><span class="toc-section-number">2.1.1</span> Simulating a scRNA-seq dataset</a></li>
 <li><a href="#de-analysis-using-lmm" id="toc-de-analysis-using-lmm"><span class="toc-section-number">2.1.2</span> DE analysis using LMM</a></li>
 </ul></li>
 </ul></li>
@@ -404,8 +404,8 @@ FLASHMM is a package for analysis of single-cell differential expression (DE) us
 
 <div id="method" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Method</h1>
-<div id="lmm-estimation-and-inference" class="section level2" number="1.1">
-<h2><span class="header-section-number">1.1</span> LMM estimation and inference</h2>
+<div id="lmm-parameter-estimation-and-hypothesis-testing" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> LMM parameter estimation and hypothesis testing</h2>
 <p>Consider the linear mixed-effects model (LMM) as expressed below <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and McCulloch 2006</a>)</span>
 <span class="math display" id="eq:lmm">\[\begin{equation}
 \tag{1.1}
@@ -430,12 +430,12 @@ with covariance matrix
 <span class="math display">\[var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},\]</span>
 where <span class="math inline">\(\theta = (\theta_0, \theta_1,\ldots, \theta_K)\)</span>, <span class="math inline">\(\theta_0 = \sigma^2\)</span>, <span class="math inline">\(\theta_k = \sigma^2_k\)</span>, and
 <span class="math display">\[V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.\]</span></p>
-<p>Estimating the variance components by either MLE or REML is a difficult numerical problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and McCulloch 2006</a>)</span>. The gradient methods are represented by the iteration equation
+<p>Estimating the variance components by either MLE or REML is a numerical optimization problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and McCulloch 2006</a>)</span>. The gradient methods are represented by the iteration equation
 <span class="math display" id="eq:gradient">\[\begin{equation}
 \tag{1.2}
 \theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
 \end{equation}\]</span>
-where <span class="math inline">\(\partial l(\theta)/\partial\theta\)</span> is the gradient of the log likelihood function, and <span class="math inline">\(\Gamma(\theta)\)</span> is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information, see Supplementary Materials of the manuscript for the details.</p>
+where <span class="math inline">\(\partial l(\theta)/\partial\theta\)</span> is the gradient of the log likelihood function, and <span class="math inline">\(\Gamma(\theta)\)</span> is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information.</p>
 <p>The hypotheses for testing fixed effects and variance components can be respectively defined as
 <span class="math display">\[
 H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
@@ -443,8 +443,8 @@ H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
 <span class="math display">\[
 H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k &gt; 0,
 \]</span>
-where <span class="math inline">\(\theta_k\)</span>, <span class="math inline">\(k=1, \ldots, K\)</span>, represent the parameters of variance components <span class="math inline">\(\sigma^2_k\)</span> but are allowed to be negative. The lower boundary of the parameters, <span class="math inline">\(\theta\)</span>, can be the negative value such that the variance-covariance matrix, <span class="math inline">\(V_{\theta}\)</span>, remains definable (positive definite). Note that the negative lower boundary exists and can be less than <span class="math inline">\(- \sigma^2/\lambda_{max}\)</span>, where <span class="math inline">\(\lambda_{max} &gt; 0\)</span>, is the largest singular value of <span class="math inline">\(ZZ^T\)</span>. If <span class="math inline">\(\theta_k &gt; 0\)</span>, then <span class="math inline">\(\sigma_k^2 = \theta_k\)</span> is definable and the mixed model is well-specified. Otherwise, if <span class="math inline">\(\theta_k \le 0\)</span>, the mixed model is miss-specified and no random effects are needed.</p>
-<p>Allowing the parameters of variance components to take negative value avoids the zero boundary problem in hypothesis testing for the variance components. Consequently, the asymptotic properties of the maximum likelihood estimation hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
+where <span class="math inline">\(\theta_k\)</span>, <span class="math inline">\(k=1, \ldots, K\)</span>, represent the parameters of variance components <span class="math inline">\(\sigma^2_k\)</span> but are allowed to be negative. The lower boundary of the parameters, <span class="math inline">\(\theta\)</span>, can be the negative value such that the variance-covariance matrix, <span class="math inline">\(V_{\theta}\)</span>, remains definable (positive definite). The negative lower boundary exists and can be less than <span class="math inline">\(- \sigma^2/\lambda_{max}\)</span>, where <span class="math inline">\(\lambda_{max} &gt; 0\)</span> is the largest singular value of <span class="math inline">\(ZZ^T\)</span>. If <span class="math inline">\(\theta_k &gt; 0\)</span>, then <span class="math inline">\(\sigma_k^2 = \theta_k\)</span> is definable and the mixed model is well-specified. Otherwise, if <span class="math inline">\(\theta_k \le 0\)</span>, the mixed model is miss-specified and no random effects are needed.</p>
+<p>Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimation at the null hypothesis hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
 <span class="math display" id="eq:tcoef">\[\begin{equation}
 \tag{1.3}
 T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
@@ -472,43 +472,49 @@ ZX = Z^TX, ~ZY = Z^TY^T, ~ZZ = Z^TZ,\\
 Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{array}
 \end{equation}\]</span>
-where <span class="math inline">\(Y = [y_1^T, \ldots, y_m^T]^T\)</span> is a <span class="math inline">\(m\)</span>-by-<span class="math inline">\(n\)</span> matrix of gene expression profile with each row <span class="math inline">\(y_i\)</span> corresponding to the expression of gene <span class="math inline">\(i\)</span>, <span class="math inline">\(i=1,\ldots,m\)</span>. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of <span class="math inline">\(O(m(p^3 + q^3))\)</span>, which doesn’t depend on number of cells (sample size <span class="math inline">\(n\)</span>). In single-cell DE analysis, the numbers of fixed and random effects, <span class="math inline">\(p\)</span> and <span class="math inline">\(q\)</span>, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See Supplemental Materials of the manuscript for details.</p>
+where <span class="math inline">\(Y = [y_1^T, \ldots, y_m^T]^T\)</span> is a <span class="math inline">\(m\)</span>-by-<span class="math inline">\(n\)</span> matrix of gene expression profile with each row <span class="math inline">\(y_i\)</span> corresponding to the expression of gene <span class="math inline">\(i\)</span>, <span class="math inline">\(i=1,\ldots,m\)</span>. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of <span class="math inline">\(O(m(p^3 + q^3))\)</span>, which doesn’t depend on number of cells (sample size <span class="math inline">\(n\)</span>). In single-cell DE analysis, the numbers of fixed and random effects, <span class="math inline">\(p\)</span> and <span class="math inline">\(q\)</span>, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.</p>
 </div>
 </div>
 <div id="flashmm" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> FLASHMM</h1>
-<p>FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, we should use lmm instead of lmmfit. That is, we precompute the summary-level data by <a href="#eq:sdata">(1.6)</a> or sslmm function in FLASHMM package, and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects.</p>
-<p>In summary, FLASHMM package provides the following functions.</p>
+<p>FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by <a href="#eq:sdata">(1.6)</a>, and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects.</p>
+<p>In summary, FLASHMM package provides the following main functions.</p>
 <ul>
 <li>lmm: fit LMM using summary-level data.</li>
 <li>lmmfit: fit LMM using cell-level data.</li>
 <li>lmmtest: perform statistical tests on the fixed effects and their contrasts.</li>
-<li>sslmm: compute the summary-level data using cell-level data.</li>
 <li>simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.</li>
 </ul>
 <div id="quick-start" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Quick start</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co">#Install FLASHMM from Github.</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;https://github.com/Baderlab/FLASHMM&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#Load the package.</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">library</span>(FLASHMM)</span></code></pre></div>
-<div id="simulating-a-scrna-seq-dataset-by-simurnaseq" class="section level3" number="2.1.1">
-<h3><span class="header-section-number">2.1.1</span> Simulating a scRNA-seq dataset by simuRNAseq</h3>
-<p>Simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="do">##Install FLASHMM from CRAN.</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># install.packages(&quot;FLASHMM&quot;)</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="do">##Install FLASHMM from Github.</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;https://github.com/Baderlab/FLASHMM&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="do">##Load the package.</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">library</span>(FLASHMM)</span></code></pre></div>
+<div id="simulating-a-scrna-seq-dataset" class="section level3" number="2.1.1">
+<h3><span class="header-section-number">2.1.1</span> Simulating a scRNA-seq dataset</h3>
+<p>Use simuRNAseq function to simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2412</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">50</span>, <span class="at">nCells =</span> <span class="dv">1000</span>, </span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>                  <span class="at">nsam =</span> <span class="dv">25</span>, <span class="at">ncls =</span> <span class="dv">4</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">6</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">names</span>(dat)</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ref.mean.dispersion&quot; &quot;metadata&quot;            &quot;counts&quot;             </span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; [4] &quot;DEgenes&quot;             &quot;treatment&quot;</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#counts and meta data</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>counts <span class="ot">&lt;-</span> dat<span class="sc">$</span>counts</span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> dat<span class="sc">$</span>metadata</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="fu">rm</span>(dat)</span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">50</span>, <span class="at">nCells =</span> <span class="dv">1000</span>, <span class="at">nsam =</span> <span class="dv">25</span>, <span class="at">ncls =</span> <span class="dv">4</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">6</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">names</span>(dat)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ref.mean.dispersion&quot; &quot;metadata&quot;            &quot;counts&quot;             </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; [4] &quot;DEgenes&quot;             &quot;treatment&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#counts and meta data</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>counts <span class="ot">&lt;-</span> dat<span class="sc">$</span>counts</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> dat<span class="sc">$</span>metadata</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="fu">head</span>(metadata)</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;       sam cls trt libsize</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; Cell1  B1   4   B     117</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Cell2  A6   3   A      75</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; Cell3  A2   1   A     101</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; Cell4  B8   1   B      80</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; Cell5 B11   4   B     123</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; Cell6  A4   3   A     113</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="fu">rm</span>(dat)</span></code></pre></div>
 </div>
 <div id="de-analysis-using-lmm" class="section level3" number="2.1.2">
 <h3><span class="header-section-number">2.1.2</span> DE analysis using LMM</h3>
@@ -521,13 +527,13 @@ where <span class="math inline">\(Y = [y_1^T, \ldots, y_m^T]^T\)</span> is a <sp
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">log</span>(libsize) <span class="sc">+</span> cls <span class="sc">+</span> cls<span class="sc">:</span>trt, <span class="at">data =</span> metadata)</span>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> sam, <span class="at">data =</span> metadata)</span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="do">##(2) LMM fitting</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="do">##Fit LMM by lmmfit using cell-level data.</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="do">##(2) LMM fitting</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="do">##Option 1: fit LMM by lmmfit using cell-level data.</span></span>
 <span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d)</span>
 <span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a></span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="do">##Fit LMM by lmm using summary-level data computed as follows.</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="do">##Option 2: fit LMM by lmm using summary-level data.</span></span>
 <span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="do">##- Computing summary statistics</span></span>
 <span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
 <span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>XX <span class="ot">&lt;-</span> <span class="fu">t</span>(X)<span class="sc">%*%</span>X; XY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>X)</span>
@@ -538,52 +544,52 @@ where <span class="math inline">\(Y = [y_1^T, \ldots, y_m^T]^T\)</span> is a <sp
 <span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a></span>
 <span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="fu">identical</span>(fit, fitss)</span>
 <span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="do">##Fit LMM by lmm using summary-level data computed by sslmm.</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="do">##- Computing summary statistics</span></span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>ss <span class="ot">&lt;-</span> <span class="fu">sslmm</span>(X, Y, Z)</span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="do">##- Fitting LMM</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(<span class="at">summary.stats =</span> ss, <span class="at">d =</span> d)</span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a></span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="fu">identical</span>(fit, fitss)</span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a></span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="do">##(3) Hypothesis tests</span></span>
-<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit)</span>
-<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="co">#head(test)</span></span>
-<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a></span>
-<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a><span class="do">##t-values</span></span>
-<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">t</span>(fit<span class="sc">$</span>t) <span class="sc">==</span> test[, <span class="fu">grep</span>(<span class="st">&quot;_t&quot;</span>, <span class="fu">colnames</span>(test))])</span>
-<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>fit<span class="sc">$</span>t[, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a><span class="co">#&gt;                   Gene1      Gene2      Gene3      Gene4      Gene5</span></span>
-<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a><span class="co">#&gt; log(libsize)  3.5564382  6.1353128  3.6098989  4.1239445  2.8179995</span></span>
-<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a><span class="co">#&gt; clsC1        -2.4158938 -4.8697164 -2.3122737 -2.6709945 -1.3220206</span></span>
-<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a><span class="co">#&gt; clsC2        -2.5957105 -4.9918921 -2.2467924 -2.5108410 -1.2387859</span></span>
-<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a><span class="co">#&gt; clsC3        -2.5576263 -5.0249733 -2.1484996 -2.5856150 -1.2535998</span></span>
-<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a><span class="co">#&gt; clsC4        -2.4466344 -5.0065480 -2.2202673 -2.6983076 -1.2058758</span></span>
-<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a><span class="co">#&gt; clsC1:trtB    0.8697778  0.3659413  0.1515357  0.9707563 -0.9577914</span></span>
-<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a><span class="co">#&gt; clsC2:trtB    2.0700456  1.0976568 -0.1112106  0.7423556 -0.5997369</span></span>
-<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a><span class="co">#&gt; clsC3:trtB    1.5066385  1.5001771 -0.3659261  0.8883383 -1.0410003</span></span>
-<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a><span class="co">#&gt; clsC4:trtB   -0.3263183  1.6810047 -0.4559326  0.6462646 -1.7515738</span></span>
-<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a></span>
-<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a><span class="do">##p-values</span></span>
-<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">t</span>(fit<span class="sc">$</span>p) <span class="sc">==</span> test[, <span class="fu">grep</span>(<span class="st">&quot;_p&quot;</span>, <span class="fu">colnames</span>(test))])</span>
-<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a>fit<span class="sc">$</span>p[, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a><span class="co">#&gt;                     Gene1        Gene2        Gene3        Gene4       Gene5</span></span>
-<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a><span class="co">#&gt; log(libsize) 0.0003936946 1.226867e-09 0.0003216502 4.036515e-05 0.004928509</span></span>
-<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a><span class="co">#&gt; clsC1        0.0158766072 1.300111e-06 0.0209667982 7.686618e-03 0.186466367</span></span>
-<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a><span class="co">#&gt; clsC2        0.0095791682 7.060831e-07 0.0248727531 1.220264e-02 0.215718133</span></span>
-<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a><span class="co">#&gt; clsC3        0.0106867912 5.971329e-07 0.0319158551 9.862323e-03 0.210283172</span></span>
-<span id="cb3-68"><a href="#cb3-68" tabindex="-1"></a><span class="co">#&gt; clsC4        0.0145925607 6.556356e-07 0.0266262016 7.087769e-03 0.228153191</span></span>
-<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a><span class="co">#&gt; clsC1:trtB   0.3846324624 7.144869e-01 0.8795840262 3.319065e-01 0.338401544</span></span>
-<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a><span class="co">#&gt; clsC2:trtB   0.0387066712 2.726210e-01 0.9114719020 4.580478e-01 0.548818677</span></span>
-<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a><span class="co">#&gt; clsC3:trtB   0.1322220329 1.338870e-01 0.7144983040 3.745743e-01 0.298129310</span></span>
-<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a><span class="co">#&gt; clsC4:trtB   0.7442524470 9.307711e-02 0.6485383571 5.182577e-01 0.080156444</span></span></code></pre></div>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="do">##(3) Hypothesis tests</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="do">##Testing coefficients (fixed effects)</span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit)</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#head(test)</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="do">##The testing t-value and p-values are also provided in the LMM fit.</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="fu">range</span>(test <span class="sc">-</span> <span class="fu">cbind</span>(<span class="fu">t</span>(fit<span class="sc">$</span>coef), <span class="fu">t</span>(fit<span class="sc">$</span>t), <span class="fu">t</span>(fit<span class="sc">$</span>p)))</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt; [1] 0 0</span></span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#fit$coef[, 1:4]</span></span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="co">#fit$t[, 1:4]</span></span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>fit<span class="sc">$</span>p[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="co">#&gt;                     Gene1        Gene2        Gene3        Gene4</span></span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a><span class="co">#&gt; log(libsize) 0.0003936946 1.226867e-09 0.0003216502 4.036515e-05</span></span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="co">#&gt; cls1         0.0158766072 1.300111e-06 0.0209667982 7.686618e-03</span></span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a><span class="co">#&gt; cls2         0.0095791682 7.060831e-07 0.0248727531 1.220264e-02</span></span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a><span class="co">#&gt; cls3         0.0106867912 5.971329e-07 0.0319158551 9.862323e-03</span></span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a><span class="co">#&gt; cls4         0.0145925607 6.556356e-07 0.0266262016 7.087769e-03</span></span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a><span class="co">#&gt; cls1:trtB    0.3846324624 7.144869e-01 0.8795840262 3.319065e-01</span></span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a><span class="co">#&gt; cls2:trtB    0.0387066712 2.726210e-01 0.9114719020 4.580478e-01</span></span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a><span class="co">#&gt; cls3:trtB    0.1322220329 1.338870e-01 0.7144983040 3.745743e-01</span></span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a><span class="co">#&gt; cls4:trtB    0.7442524470 9.307711e-02 0.6485383571 5.182577e-01</span></span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a></span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a><span class="do">##Testing contrasts</span></span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a><span class="do">##We can make comparisons using contrasts. For example, </span></span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a><span class="do">##the effects of treatment B vs A in all clusters can be tested </span></span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a><span class="do">##using the contrast constructed as follows:</span></span>
+<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a>ct <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">ncol</span>(X))</span>
+<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a><span class="fu">names</span>(ct) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(X)</span>
+<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;B&quot;</span>, <span class="fu">colnames</span>(X))</span>
+<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a>ct[index] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">length</span>(index)</span>
+<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a>ct</span>
+<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a><span class="co">#&gt; log(libsize)         cls1         cls2         cls3         cls4    cls1:trtB </span></span>
+<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a><span class="co">#&gt;         0.00         0.00         0.00         0.00         0.00         0.25 </span></span>
+<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a><span class="co">#&gt;    cls2:trtB    cls3:trtB    cls4:trtB </span></span>
+<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a><span class="co">#&gt;         0.25         0.25         0.25</span></span>
+<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> ct)</span>
+<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a><span class="fu">head</span>(test)</span>
+<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a><span class="co">#&gt;             _coef         _t        _p</span></span>
+<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a><span class="co">#&gt; Gene1  0.09445436  1.4753256 0.1404426</span></span>
+<span id="cb3-68"><a href="#cb3-68" tabindex="-1"></a><span class="co">#&gt; Gene2  0.10333114  1.4540794 0.1462409</span></span>
+<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a><span class="co">#&gt; Gene3 -0.02117872 -0.2900354 0.7718498</span></span>
+<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a><span class="co">#&gt; Gene4  0.10281315  0.9531558 0.3407436</span></span>
+<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a><span class="co">#&gt; Gene5 -0.12106061 -1.3918602 0.1642770</span></span>
+<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a><span class="co">#&gt; Gene6  0.06756558  1.1553425 0.2482287</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -597,86 +603,92 @@ where <span class="math inline">\(Y = [y_1^T, \ldots, y_m^T]^T\)</span> is a <sp
 <div id="preparing-reference-dataset" class="section level3" number="3.1.1">
 <h3><span class="header-section-number">3.1.1</span> Preparing reference dataset</h3>
 <p>To load the PBMC dataset, we need ExperimentHub package.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(ExperimentHub)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="do">##Load data.</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>eh <span class="ot">&lt;-</span> <span class="fu">ExperimentHub</span>()</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#query(eh, &quot;Kang&quot;)</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>sce <span class="ot">&lt;-</span> eh[[<span class="st">&quot;EH2259&quot;</span>]]</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="do">##Remove undetected genes.</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[<span class="fu">rowSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">&gt;</span> <span class="dv">0</span>, ]</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="do">##Remove cells with few or many detected genes (outliers).</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>nGenes <span class="ot">&lt;-</span> <span class="fu">colSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>bx <span class="ot">&lt;-</span> <span class="fu">boxplot</span>(<span class="fu">log</span>(nGenes), <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[, nGenes <span class="sc">&gt;=</span> <span class="fu">exp</span>(bx<span class="sc">$</span>stats[<span class="dv">1</span>]) <span class="sc">&amp;</span> nGenes <span class="sc">&lt;=</span> <span class="fu">exp</span>(bx<span class="sc">$</span>stats[<span class="dv">5</span>])]</span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="do">##Remove lowly expressed genes.</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="do">##counts per cell (cpc) </span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>cpc <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(sce))<span class="sc">/</span><span class="fu">ncol</span>(sce)</span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[(<span class="fu">rowSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&amp;</span> (cpc <span class="sc">&gt;</span> <span class="fl">0.005</span>), ]</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="do">##counts and metadata</span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>counts <span class="ot">&lt;-</span> <span class="fu">assay</span>(sce, <span class="st">&quot;counts&quot;</span>)</span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">colData</span>(sce))</span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="fu">head</span>(coldata)</span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt;                   ind stim cluster            cell multiplets</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; AAACATACAATGCC-1  107 ctrl       5     CD4 T cells    doublet</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; AAACATACATTTCC-1 1016 ctrl       9 CD14+ Monocytes    singlet</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGAAA-1 1256 ctrl       9 CD14+ Monocytes    singlet</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGCTA-1 1256 ctrl       9 CD14+ Monocytes    doublet</span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; AAACATACCATGCA-1 1488 ctrl       3     CD4 T cells    singlet</span></span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; AAACATACCTCGCT-1 1256 ctrl       9 CD14+ Monocytes    singlet</span></span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(counts) <span class="sc">==</span> <span class="fu">rownames</span>(coldata))</span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="fu">dim</span>(counts)</span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; [1]  7483 28721</span></span>
-<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="fu">rm</span>(eh, sce)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;BiocManager&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;ExperimentHub&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;ExperimentHub&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;SingleCellExperiment&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;SingleCellExperiment&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(ExperimentHub)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="do">##Load data.</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>eh <span class="ot">&lt;-</span> <span class="fu">ExperimentHub</span>()</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#query(eh, &quot;Kang&quot;)</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>sce <span class="ot">&lt;-</span> eh[[<span class="st">&quot;EH2259&quot;</span>]]</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="do">##Remove undetected genes.</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[<span class="fu">rowSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">&gt;</span> <span class="dv">0</span>, ]</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="do">##Remove cells with few or many detected genes (outliers).</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>nGenes <span class="ot">&lt;-</span> <span class="fu">colSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>bx <span class="ot">&lt;-</span> <span class="fu">boxplot</span>(<span class="fu">log</span>(nGenes), <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[, nGenes <span class="sc">&gt;=</span> <span class="fu">exp</span>(bx<span class="sc">$</span>stats[<span class="dv">1</span>]) <span class="sc">&amp;</span> nGenes <span class="sc">&lt;=</span> <span class="fu">exp</span>(bx<span class="sc">$</span>stats[<span class="dv">5</span>])]</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="do">##Remove lowly expressed genes.</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="do">##counts per cell (cpc) </span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>cpc <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(sce))<span class="sc">/</span><span class="fu">ncol</span>(sce)</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>sce <span class="ot">&lt;-</span> sce[(<span class="fu">rowSums</span>(<span class="fu">counts</span>(sce) <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&amp;</span> (cpc <span class="sc">&gt;</span> <span class="fl">0.005</span>), ]</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="do">##counts and metadata</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>counts <span class="ot">&lt;-</span> <span class="fu">assay</span>(sce, <span class="st">&quot;counts&quot;</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">colData</span>(sce))</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="fu">head</span>(coldata)</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt;                   ind stim cluster            cell multiplets</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; AAACATACAATGCC-1  107 ctrl       5     CD4 T cells    doublet</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt; AAACATACATTTCC-1 1016 ctrl       9 CD14+ Monocytes    singlet</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGAAA-1 1256 ctrl       9 CD14+ Monocytes    singlet</span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGCTA-1 1256 ctrl       9 CD14+ Monocytes    doublet</span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt; AAACATACCATGCA-1 1488 ctrl       3     CD4 T cells    singlet</span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt; AAACATACCTCGCT-1 1256 ctrl       9 CD14+ Monocytes    singlet</span></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(counts) <span class="sc">==</span> <span class="fu">rownames</span>(coldata))</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="fu">dim</span>(counts)</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt; [1]  7483 28721</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="fu">rm</span>(eh, sce)</span></code></pre></div>
 </div>
 <div id="generating-dataset" class="section level3" number="3.1.2">
 <h3><span class="header-section-number">3.1.2</span> Generating dataset</h3>
 <p>We use the reference dataset to generate a scRNA-seq dataset by simuRNAseq function. First we need to specify which columns represent samples (individuals), cell clusters (types), and treatments (experimental conditions) in the reference metadata by ‘sam’, ‘cls’, and ‘trt’, respectively. We also specify the numbers of genes, cells and differentially expressed (DE) genes to be generated. We use default settings for other arguments in simuRNAseq function. The generated dataset contains count data, metadata, and the DE genes specific to a cell cluster. The DE genes can be considered as the positive controls and the others the negative controls. Without confusion, DE can represent either ‘differentially expressed’ or ‘differential expression’.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="do">##Specify which columns represent samples, treatments, and cell-types.</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;ind&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;sam&quot;</span>  <span class="co">#samples</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;stim&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;trt&quot;</span> <span class="co">#treatments</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;cell&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;cls&quot;</span> <span class="co">#cell-types</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> coldata[, <span class="fu">c</span>(<span class="st">&quot;sam&quot;</span>, <span class="st">&quot;trt&quot;</span>, <span class="st">&quot;cls&quot;</span>)]</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">head</span>(coldata)</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt;                   sam  trt             cls</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; AAACATACAATGCC-1  107 ctrl     CD4 T cells</span></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; AAACATACATTTCC-1 1016 ctrl CD14+ Monocytes</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGAAA-1 1256 ctrl CD14+ Monocytes</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGCTA-1 1256 ctrl CD14+ Monocytes</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; AAACATACCATGCA-1 1488 ctrl     CD4 T cells</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; AAACATACCTCGCT-1 1256 ctrl CD14+ Monocytes</span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="do">##Generate the dataset by simuRNAseq function.</span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2412</span>)</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(counts, <span class="at">nGenes =</span> <span class="dv">100</span>, <span class="at">nCells =</span> <span class="dv">120000</span>, <span class="at">metadata =</span> coldata, </span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>                  <span class="at">nsam =</span> <span class="dv">25</span>, <span class="at">ncls =</span> <span class="dv">10</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">10</span>, </span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>                  <span class="at">minbeta =</span> <span class="fl">0.5</span>, <span class="at">maxbeta =</span> <span class="dv">1</span>, <span class="at">var.randomeffects =</span> <span class="fl">0.1</span>)</span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="fu">str</span>(dat)</span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; List of 5</span></span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 7483 obs. of  2 variables:</span></span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:7483] 0.0718 0.2008 19.708 0.0725 0.0755 ...</span></span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:7483] 0.5183 0.0814 0.1902 0.0963 0.0483 ...</span></span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt;  $ metadata           :&#39;data.frame&#39;: 120000 obs. of  4 variables:</span></span>
-<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : int [1:120000] 1256 101 1488 1016 1244 1244 107 1256 101 1256 ...</span></span>
-<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : Factor w/ 2 levels &quot;ctrl&quot;,&quot;stim&quot;: 1 2 2 1 1 2 2 1 2 2 ...</span></span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : Factor w/ 8 levels &quot;B cells&quot;,&quot;CD14+ Monocytes&quot;,..: 3 3 3 4 3 3 3 4 3 3 ...</span></span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:120000] 909 1459 1030 1680 856 ...</span></span>
-<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:120000] 0 0 0 0 0 0 0 0 0 0 ...</span></span>
-<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:120000] &quot;GCAGGGCTATCGTG-1&quot; &quot;AGTCGAACAGAGTA-1&quot; &quot;CCTAAACTAACAGA-1&quot; &quot;AAATGGGAATTCCT-1&quot; ...</span></span>
-<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt;  $ DEgenes            :&#39;data.frame&#39;: 10 obs. of  3 variables:</span></span>
-<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;RCE1&quot; &quot;CD68&quot; &quot;FUNDC2_ENSG00000165775&quot; &quot;PAIP2&quot; ...</span></span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] 0.714 0.689 -0.77 -0.716 -0.932 ...</span></span>
-<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;B cells&quot; &quot;B cells&quot; &quot;CD14+ Monocytes&quot; &quot;CD4 T cells&quot; ...</span></span>
-<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt;  $ treatment          : chr &quot;stim&quot;</span></span>
-<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a></span>
-<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="do">##Remove the reference dataset that is no longer needed in the following analysis.</span></span>
-<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="fu">rm</span>(counts, coldata)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="do">##Specify which columns represent samples, treatments, and cell-types.</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;ind&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;sam&quot;</span>  <span class="co">#samples</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;stim&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;trt&quot;</span> <span class="co">#treatments</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="fu">colnames</span>(coldata)[<span class="fu">colnames</span>(coldata) <span class="sc">==</span> <span class="st">&quot;cell&quot;</span>] <span class="ot">&lt;-</span> <span class="st">&quot;cls&quot;</span> <span class="co">#cell-types</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> coldata[, <span class="fu">c</span>(<span class="st">&quot;sam&quot;</span>, <span class="st">&quot;trt&quot;</span>, <span class="st">&quot;cls&quot;</span>)]</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">head</span>(coldata)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt;                   sam  trt             cls</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; AAACATACAATGCC-1  107 ctrl     CD4 T cells</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; AAACATACATTTCC-1 1016 ctrl CD14+ Monocytes</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGAAA-1 1256 ctrl CD14+ Monocytes</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; AAACATACCAGCTA-1 1256 ctrl CD14+ Monocytes</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; AAACATACCATGCA-1 1488 ctrl     CD4 T cells</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; AAACATACCTCGCT-1 1256 ctrl CD14+ Monocytes</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="do">##Generate the dataset by simuRNAseq function.</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2412</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(counts, <span class="at">nGenes =</span> <span class="dv">100</span>, <span class="at">nCells =</span> <span class="dv">120000</span>, <span class="at">metadata =</span> coldata, </span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>                  <span class="at">nsam =</span> <span class="dv">25</span>, <span class="at">ncls =</span> <span class="dv">10</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">10</span>, </span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>                  <span class="at">minbeta =</span> <span class="fl">0.5</span>, <span class="at">maxbeta =</span> <span class="dv">1</span>, <span class="at">var.randomeffects =</span> <span class="fl">0.1</span>)</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="fu">str</span>(dat)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; List of 5</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 7483 obs. of  2 variables:</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:7483] 0.0718 0.2008 19.708 0.0725 0.0755 ...</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:7483] 0.5183 0.0814 0.1902 0.0963 0.0483 ...</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;  $ metadata           :&#39;data.frame&#39;: 120000 obs. of  4 variables:</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : int [1:120000] 1256 101 1488 1016 1244 1244 107 1256 101 1256 ...</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : Factor w/ 2 levels &quot;ctrl&quot;,&quot;stim&quot;: 1 2 2 1 1 2 2 1 2 2 ...</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : Factor w/ 8 levels &quot;B cells&quot;,&quot;CD14+ Monocytes&quot;,..: 3 3 3 4 3 3 3 4 3 3 ...</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:120000] 909 1459 1030 1680 856 ...</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:120000] 0 0 0 0 0 0 0 0 0 0 ...</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:120000] &quot;GCAGGGCTATCGTG-1&quot; &quot;AGTCGAACAGAGTA-1&quot; &quot;CCTAAACTAACAGA-1&quot; &quot;AAATGGGAATTCCT-1&quot; ...</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt;  $ DEgenes            :&#39;data.frame&#39;: 10 obs. of  3 variables:</span></span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;RCE1&quot; &quot;CD68&quot; &quot;FUNDC2_ENSG00000165775&quot; &quot;PAIP2&quot; ...</span></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] 0.714 0.689 -0.77 -0.716 -0.932 ...</span></span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;B cells&quot; &quot;B cells&quot; &quot;CD14+ Monocytes&quot; &quot;CD4 T cells&quot; ...</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;  $ treatment          : chr &quot;stim&quot;</span></span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a></span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="do">##Remove the reference dataset that is no longer needed in the following analysis.</span></span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="fu">rm</span>(counts, coldata)</span></code></pre></div>
 </div>
 </div>
 <div id="de-analysis-of-the-simulated-scrna-seq-data" class="section level2" number="3.2">
@@ -701,228 +713,201 @@ The summary-level data doesn’t depend on the sample size <span class="math inl
 <p><strong>Exploring LMM fit and the DE genes</strong>: We check if the LMM fitting is convergent, and perform hypothesis testing on the variance components of random effects. Then we identify the DE genes based on hypothesis testing p-values for the coefficients (fixed effects). If the absolute first partial derivatives of log likelihood are all less than the convergence tolerance, the LMM fitting converges, otherwise it doesn’t converge. The genes for which LMM fitting doesn’t converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable. The DE genes can be identified by adjusting p-values obtained by false discovery rate (FDR) or family-wise error rate (Bonferroni correction). We might exclude the genes with small coefficients (effect size or log-fold-change).</p>
 <div id="lmm-design" class="section level3" number="3.2.1">
 <h3><span class="header-section-number">3.2.1</span> LMM design</h3>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="do">##Gene expression matrix, Y = log2(1 + counts)</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">log2</span>(<span class="dv">1</span> <span class="sc">+</span> dat<span class="sc">$</span>counts)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>dat<span class="sc">$</span>counts <span class="ot">&lt;-</span> <span class="cn">NULL</span> <span class="co">#Remove the counts.</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="do">##Design matrix for fixed effects</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">log</span>(libsize) <span class="sc">+</span> cls <span class="sc">+</span> cls<span class="sc">:</span>trt, <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;</span><span class="sc">\\</span><span class="st">+&quot;</span>, <span class="st">&quot;p&quot;</span>, <span class="fu">colnames</span>(X))</span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot; &quot;</span>, <span class="st">&quot;_&quot;</span>, <span class="fu">colnames</span>(X))</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="do">##Design matrix for random effects</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">as.factor</span>(sam), <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="do">##Dimension of random effects</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="do">##Gene expression matrix, Y = log2(1 + counts)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">log2</span>(<span class="dv">1</span> <span class="sc">+</span> dat<span class="sc">$</span>counts)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>dat<span class="sc">$</span>counts <span class="ot">&lt;-</span> <span class="cn">NULL</span> <span class="co">#Remove the counts.</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="do">##Design matrix for fixed effects</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">log</span>(libsize) <span class="sc">+</span> cls <span class="sc">+</span> cls<span class="sc">:</span>trt, <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;cls&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="fu">colnames</span>(X))</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;</span><span class="sc">\\</span><span class="st">+&quot;</span>, <span class="st">&quot;p&quot;</span>, <span class="fu">colnames</span>(X))</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot; &quot;</span>, <span class="st">&quot;_&quot;</span>, <span class="fu">colnames</span>(X))</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="do">##Design matrix for random effects</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">as.factor</span>(sam), <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="do">##Dimension of random effects</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span></code></pre></div>
 </div>
 <div id="lmm-fitting" class="section level3" number="3.2.2">
 <h3><span class="header-section-number">3.2.2</span> LMM fitting</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>  </span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="do">##(1) Fit LMM by cell-level data.</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>max.iter <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fl">1e-5</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">str</span>(fit)</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; List of 12</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;  $ method  : chr &quot;REML-FS&quot;</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;  $ dlogL   : num [1:2, 1:100] 6.60e-06 -9.31e-09 7.68e-06 -1.01e-08 3.24e-08 ...</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : NULL</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;dl&quot; &quot;dl&quot; &quot;dl&quot; &quot;dl&quot; ...</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt;  $ niter   : num [1:100] 7 9 6 6 13 11 9 8 7 8 ...</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;  $ coef    : num [1:17, 1:100] 0.021 -0.134 -0.13 -0.132 -0.132 ...</span></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;  $ se      : num [1:17, 1:100] 0.00109 0.00817 0.00862 0.00799 0.00811 ...</span></span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt;  $ t       : num [1:17, 1:100] 19.3 -16.4 -15.1 -16.6 -16.3 ...</span></span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt;  $ p       : num [1:17, 1:100] 5.62e-83 2.39e-60 2.89e-51 1.47e-61 8.16e-60 ...</span></span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt;  $ cov     : num [1:17, 1:17, 1:100] 1.18e-06 -8.37e-06 -9.02e-06 -8.35e-06 -8.27e-06 ...</span></span>
-<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 3</span></span>
-<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:17] &quot;log(libsize)&quot; &quot;clsB_cells&quot; &quot;clsCD14p_Monocytes&quot; &quot;clsCD4_T_cells&quot; ...</span></span>
-<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="co">#&gt;  $ df      : int 119983</span></span>
-<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="co">#&gt;  $ theta   : num [1:2, 1:100] 3.08e-05 2.16e-02 1.05e-04 8.07e-02 3.31e-04 ...</span></span>
-<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;var1&quot; &quot;var0&quot;</span></span>
-<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a><span class="co">#&gt;  $ se.theta: num [1:2, 1:100] 1.75e-05 8.84e-05 6.02e-05 3.29e-04 1.80e-04 ...</span></span>
-<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;var1&quot; &quot;var0&quot;</span></span>
-<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;EPC2&quot; &quot;TNFRSF18&quot; &quot;TMEM87A&quot; &quot;SIRT6&quot; ...</span></span>
-<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a><span class="co">#&gt;  $ RE      : NULL</span></span>
-<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a></span>
-<span id="cb7-47"><a href="#cb7-47" tabindex="-1"></a><span class="do">##(2) Fit LMM by summary-level data.</span></span>
-<span id="cb7-48"><a href="#cb7-48" tabindex="-1"></a><span class="do">##- Compute the summary-level data.</span></span>
-<span id="cb7-49"><a href="#cb7-49" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
-<span id="cb7-50"><a href="#cb7-50" tabindex="-1"></a>XX <span class="ot">&lt;-</span> <span class="fu">t</span>(X)<span class="sc">%*%</span>X</span>
-<span id="cb7-51"><a href="#cb7-51" tabindex="-1"></a>XY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>X)</span>
-<span id="cb7-52"><a href="#cb7-52" tabindex="-1"></a>ZX <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>X</span>
-<span id="cb7-53"><a href="#cb7-53" tabindex="-1"></a>ZY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>Z)</span>
-<span id="cb7-54"><a href="#cb7-54" tabindex="-1"></a>ZZ <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>Z</span>
-<span id="cb7-55"><a href="#cb7-55" tabindex="-1"></a>Ynorm <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(Y<span class="sc">*</span>Y)</span>
-<span id="cb7-56"><a href="#cb7-56" tabindex="-1"></a></span>
-<span id="cb7-57"><a href="#cb7-57" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z) <span class="co">#release the memory.</span></span>
-<span id="cb7-58"><a href="#cb7-58" tabindex="-1"></a></span>
-<span id="cb7-59"><a href="#cb7-59" tabindex="-1"></a><span class="do">##- Fit LMM.</span></span>
-<span id="cb7-60"><a href="#cb7-60" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, </span>
-<span id="cb7-61"><a href="#cb7-61" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb7-62"><a href="#cb7-62" tabindex="-1"></a><span class="fu">identical</span>(fit, fitss)</span>
-<span id="cb7-63"><a href="#cb7-63" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb7-64"><a href="#cb7-64" tabindex="-1"></a><span class="fu">rm</span>(fitss)</span>
-<span id="cb7-65"><a href="#cb7-65" tabindex="-1"></a></span>
-<span id="cb7-66"><a href="#cb7-66" tabindex="-1"></a><span class="do">##Test the treatment effect within all cell-types.</span></span>
-<span id="cb7-67"><a href="#cb7-67" tabindex="-1"></a><span class="do">##- Construct a contrast by summing the treatment effects across cell-types.</span></span>
-<span id="cb7-68"><a href="#cb7-68" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="st">&quot;trt&quot;</span> <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(fit<span class="sc">$</span>coef)))</span>
-<span id="cb7-69"><a href="#cb7-69" tabindex="-1"></a>contrast[<span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef)), ] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb7-70"><a href="#cb7-70" tabindex="-1"></a></span>
-<span id="cb7-71"><a href="#cb7-71" tabindex="-1"></a><span class="do">##- Test the contrast.</span></span>
-<span id="cb7-72"><a href="#cb7-72" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
-<span id="cb7-73"><a href="#cb7-73" tabindex="-1"></a><span class="fu">head</span>(test)</span>
-<span id="cb7-74"><a href="#cb7-74" tabindex="-1"></a><span class="co">#&gt;               trt_t     trt_p</span></span>
-<span id="cb7-75"><a href="#cb7-75" tabindex="-1"></a><span class="co">#&gt; EPC2     -0.9250580 0.3549376</span></span>
-<span id="cb7-76"><a href="#cb7-76" tabindex="-1"></a><span class="co">#&gt; TNFRSF18 -0.4655622 0.6415298</span></span>
-<span id="cb7-77"><a href="#cb7-77" tabindex="-1"></a><span class="co">#&gt; TMEM87A   0.1783232 0.8584694</span></span>
-<span id="cb7-78"><a href="#cb7-78" tabindex="-1"></a><span class="co">#&gt; SIRT6     0.9348075 0.3498894</span></span>
-<span id="cb7-79"><a href="#cb7-79" tabindex="-1"></a><span class="co">#&gt; IL12RB1  -0.4848279 0.6277993</span></span>
-<span id="cb7-80"><a href="#cb7-80" tabindex="-1"></a><span class="co">#&gt; RBFA     -1.3544274 0.1756026</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>  </span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="do">##Option 1: fit LMM by cell-level data.</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>max.iter <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fl">1e-5</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">names</span>(fit)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt;  [1] &quot;method&quot;   &quot;dlogL&quot;    &quot;niter&quot;    &quot;coef&quot;     &quot;se&quot;       &quot;t&quot;       </span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt;  [7] &quot;p&quot;        &quot;cov&quot;      &quot;df&quot;       &quot;theta&quot;    &quot;se.theta&quot; &quot;RE&quot;</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="do">##Option 2: fit LMM by summary-level data.</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="do">##- Compute the summary-level data.</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>XX <span class="ot">&lt;-</span> <span class="fu">t</span>(X)<span class="sc">%*%</span>X</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>XY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>X)</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>ZX <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>X</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>ZY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>Z)</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>ZZ <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>Z</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>Ynorm <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(Y<span class="sc">*</span>Y)</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z) <span class="co">#release the memory.</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="do">##- Fit LMM.</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, </span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="fu">identical</span>(fit, fitss)</span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="fu">rm</span>(fitss)</span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="do">##Test the treatment effect within all cell-types.</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="do">##- Construct a contrast by summing the treatment effects across cell-types.</span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="st">&quot;trt&quot;</span> <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(fit<span class="sc">$</span>coef)))</span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a>contrast[index, ] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">length</span>(index)</span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="do">##- Test the contrast.</span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="fu">head</span>(test)</span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt;               trt_coef      trt_t     trt_p</span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; EPC2     -0.0014773066 -0.9250580 0.3549376</span></span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt; TNFRSF18 -0.0014351787 -0.4655622 0.6415298</span></span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt; TMEM87A   0.0004765956  0.1783232 0.8584694</span></span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt; SIRT6     0.0019325236  0.9348075 0.3498894</span></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="co">#&gt; IL12RB1  -0.0006759283 -0.4848279 0.6277993</span></span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="co">#&gt; RBFA     -0.0018546273 -1.3544274 0.1756026</span></span></code></pre></div>
 </div>
 <div id="exploring-lmm-fit-and-the-de-genes" class="section level3" number="3.2.3">
 <h3><span class="header-section-number">3.2.3</span> Exploring LMM fit and the DE genes</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="do">##(1) Check which LMM fittings converge.</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>cvg <span class="ot">&lt;-</span> (<span class="fu">apply</span>(<span class="fu">abs</span>(fit<span class="sc">$</span>dlogL), <span class="dv">2</span>, max) <span class="sc">&lt;</span> epsilon) </span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">sum</span>(cvg) </span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="do">##(2) Hypothesis testing for variance components:</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="do">##    H0, theta &lt;/= 0 vs H1, theta &gt; 0.</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>z <span class="ot">&lt;-</span> fit<span class="sc">$</span>theta[<span class="st">&quot;var1&quot;</span>, ]<span class="sc">/</span>fit<span class="sc">$</span>se.theta[<span class="st">&quot;var1&quot;</span>, ]</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(z, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">sum</span>(p <span class="sc">&lt;=</span> <span class="fl">0.05</span>)</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; [1] 90</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="do">##(3) The DE genes specific to a cell-type</span></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="do">##Coefficients and p-values for the genes specific to a cell-type.</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>beta <span class="ot">&lt;-</span> <span class="fu">t</span>(fit<span class="sc">$</span>coef[index, cvg])</span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">t</span>(fit<span class="sc">$</span>p[index, cvg])</span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a></span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="do">##Adjust p-values by FDR.</span></span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>padj <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">p.adjust</span>(<span class="fu">c</span>(p), <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>), <span class="at">nrow =</span> <span class="fu">nrow</span>(p), <span class="at">ncol =</span> <span class="fu">ncol</span>(p))</span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a></span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="do">##The DE genes specific to a cell cluster with FDR &lt; 0.05.</span></span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>degenes <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(p)){</span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a>  i <span class="ot">&lt;-</span> (padj[, j] <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">sum</span>(i) <span class="sc">&gt;</span> <span class="dv">0</span>) degenes <span class="ot">&lt;-</span> <span class="fu">rbind</span>(degenes, <span class="fu">data.frame</span>(<span class="at">gene =</span> <span class="fu">rownames</span>(p)[i], <span class="at">cluster =</span> j, <span class="at">coef =</span> beta[i, j], <span class="at">p =</span> p[i, j], <span class="at">FDR =</span> padj[i, j]))</span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>}</span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="fu">rownames</span>(degenes) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>degenes</span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt;                      gene cluster         coef             p           FDR</span></span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; 1                    RCE1       1  0.023144076  1.285161e-10  2.056257e-08</span></span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt; 2                    CD68       1  0.169924579  3.359959e-40  8.959890e-38</span></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt; 3                   N4BP1       2  0.013871752  1.377216e-04  1.001611e-02</span></span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt; 4                   BEST1       2  0.011185860  1.056919e-03  4.973737e-02</span></span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt; 5                   MYADM       2  0.011748386  2.521124e-07  2.881284e-05</span></span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; 6                C1orf174       2  0.010434876  5.622747e-04  2.998798e-02</span></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; 7  FUNDC2_ENSG00000165775       2 -0.074345865  1.513410e-92  6.053640e-90</span></span>
-<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt; 8                   PAIP2       3 -0.162167570 2.257004e-218 1.805603e-215</span></span>
-<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt; 9                  CAMK2D       3 -0.004915633  6.519633e-07  6.519633e-05</span></span>
-<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt; 10                  NOC4L       5  0.026286349  4.995860e-04  2.854777e-02</span></span>
-<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="co">#&gt; 11                 MALSU1       5 -0.033691602  8.530013e-05  6.824010e-03</span></span>
-<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="co">#&gt; 12                 FAM53B       5 -0.017410267  4.704017e-04  2.854777e-02</span></span>
-<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a><span class="co">#&gt; 13                    HGS       6 -0.013463985  6.440482e-04  3.220241e-02</span></span>
-<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a><span class="co">#&gt; 14                   UTRN       6  0.018717417  1.546949e-04  1.031299e-02</span></span>
-<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a><span class="co">#&gt; 15                 INTS10       6 -0.065494690  3.951917e-27  7.903833e-25</span></span>
-<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a><span class="co">#&gt; 16                 ZNF770       7  0.058368842  1.127945e-05  1.002618e-03</span></span>
-<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a><span class="co">#&gt; 17                  RBBP7       8  0.044868013  1.457681e-09  1.943575e-07</span></span>
-<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a></span>
-<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a><span class="do">##The simulated DE genes</span></span>
-<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a>dat<span class="sc">$</span>DEgenes</span>
-<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="co">#&gt;                       gene       beta           cluster</span></span>
-<span id="cb8-55"><a href="#cb8-55" tabindex="-1"></a><span class="co">#&gt; 91                    RCE1  0.7138792           B cells</span></span>
-<span id="cb8-56"><a href="#cb8-56" tabindex="-1"></a><span class="co">#&gt; 92                    CD68  0.6893330           B cells</span></span>
-<span id="cb8-57"><a href="#cb8-57" tabindex="-1"></a><span class="co">#&gt; 93  FUNDC2_ENSG00000165775 -0.7704019   CD14+ Monocytes</span></span>
-<span id="cb8-58"><a href="#cb8-58" tabindex="-1"></a><span class="co">#&gt; 94                   PAIP2 -0.7157209       CD4 T cells</span></span>
-<span id="cb8-59"><a href="#cb8-59" tabindex="-1"></a><span class="co">#&gt; 95                  CAMK2D -0.9319393       CD4 T cells</span></span>
-<span id="cb8-60"><a href="#cb8-60" tabindex="-1"></a><span class="co">#&gt; 96                   DMXL1 -0.7755333   Dendritic cells</span></span>
-<span id="cb8-61"><a href="#cb8-61" tabindex="-1"></a><span class="co">#&gt; 97                 SLC35F6 -0.7766885   Dendritic cells</span></span>
-<span id="cb8-62"><a href="#cb8-62" tabindex="-1"></a><span class="co">#&gt; 98                  INTS10 -0.8749181 FCGR3A+ Monocytes</span></span>
-<span id="cb8-63"><a href="#cb8-63" tabindex="-1"></a><span class="co">#&gt; 99                  ZNF770  0.8655967    Megakaryocytes</span></span>
-<span id="cb8-64"><a href="#cb8-64" tabindex="-1"></a><span class="co">#&gt; 100                  RBBP7  0.5337121          NK cells</span></span>
-<span id="cb8-65"><a href="#cb8-65" tabindex="-1"></a></span>
-<span id="cb8-66"><a href="#cb8-66" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb8-67"><a href="#cb8-67" tabindex="-1"></a><span class="co">#&gt; R version 4.4.2 (2024-10-31)</span></span>
-<span id="cb8-68"><a href="#cb8-68" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
-<span id="cb8-69"><a href="#cb8-69" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
-<span id="cb8-70"><a href="#cb8-70" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-71"><a href="#cb8-71" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
-<span id="cb8-72"><a href="#cb8-72" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
-<span id="cb8-73"><a href="#cb8-73" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
-<span id="cb8-74"><a href="#cb8-74" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-75"><a href="#cb8-75" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
-<span id="cb8-76"><a href="#cb8-76" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
-<span id="cb8-77"><a href="#cb8-77" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-78"><a href="#cb8-78" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
-<span id="cb8-79"><a href="#cb8-79" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
-<span id="cb8-80"><a href="#cb8-80" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-81"><a href="#cb8-81" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
-<span id="cb8-82"><a href="#cb8-82" tabindex="-1"></a><span class="co">#&gt; [1] stats4    stats     graphics  grDevices utils     datasets  methods  </span></span>
-<span id="cb8-83"><a href="#cb8-83" tabindex="-1"></a><span class="co">#&gt; [8] base     </span></span>
-<span id="cb8-84"><a href="#cb8-84" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-85"><a href="#cb8-85" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
-<span id="cb8-86"><a href="#cb8-86" tabindex="-1"></a><span class="co">#&gt;  [1] muscData_1.18.0             SingleCellExperiment_1.26.0</span></span>
-<span id="cb8-87"><a href="#cb8-87" tabindex="-1"></a><span class="co">#&gt;  [3] SummarizedExperiment_1.34.0 Biobase_2.64.0             </span></span>
-<span id="cb8-88"><a href="#cb8-88" tabindex="-1"></a><span class="co">#&gt;  [5] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        </span></span>
-<span id="cb8-89"><a href="#cb8-89" tabindex="-1"></a><span class="co">#&gt;  [7] IRanges_2.38.1              S4Vectors_0.42.1           </span></span>
-<span id="cb8-90"><a href="#cb8-90" tabindex="-1"></a><span class="co">#&gt;  [9] MatrixGenerics_1.16.0       matrixStats_1.4.1          </span></span>
-<span id="cb8-91"><a href="#cb8-91" tabindex="-1"></a><span class="co">#&gt; [11] ExperimentHub_2.12.0        AnnotationHub_3.12.0       </span></span>
-<span id="cb8-92"><a href="#cb8-92" tabindex="-1"></a><span class="co">#&gt; [13] BiocFileCache_2.12.0        dbplyr_2.5.0               </span></span>
-<span id="cb8-93"><a href="#cb8-93" tabindex="-1"></a><span class="co">#&gt; [15] BiocGenerics_0.50.0         FLASHMM_1.0.0              </span></span>
-<span id="cb8-94"><a href="#cb8-94" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-95"><a href="#cb8-95" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span id="cb8-96"><a href="#cb8-96" tabindex="-1"></a><span class="co">#&gt;  [1] tidyselect_1.2.1        dplyr_1.1.4             blob_1.2.4             </span></span>
-<span id="cb8-97"><a href="#cb8-97" tabindex="-1"></a><span class="co">#&gt;  [4] filelock_1.0.3          Biostrings_2.72.1       fastmap_1.2.0          </span></span>
-<span id="cb8-98"><a href="#cb8-98" tabindex="-1"></a><span class="co">#&gt;  [7] promises_1.3.2          digest_0.6.37           mime_0.12              </span></span>
-<span id="cb8-99"><a href="#cb8-99" tabindex="-1"></a><span class="co">#&gt; [10] lifecycle_1.0.4         ellipsis_0.3.2          processx_3.8.4         </span></span>
-<span id="cb8-100"><a href="#cb8-100" tabindex="-1"></a><span class="co">#&gt; [13] KEGGREST_1.44.1         RSQLite_2.3.9           magrittr_2.0.3         </span></span>
-<span id="cb8-101"><a href="#cb8-101" tabindex="-1"></a><span class="co">#&gt; [16] compiler_4.4.2          rlang_1.1.4             sass_0.4.9             </span></span>
-<span id="cb8-102"><a href="#cb8-102" tabindex="-1"></a><span class="co">#&gt; [19] tools_4.4.2             yaml_2.3.10             knitr_1.49             </span></span>
-<span id="cb8-103"><a href="#cb8-103" tabindex="-1"></a><span class="co">#&gt; [22] S4Arrays_1.4.1          htmlwidgets_1.6.4       bit_4.5.0.1            </span></span>
-<span id="cb8-104"><a href="#cb8-104" tabindex="-1"></a><span class="co">#&gt; [25] pkgbuild_1.4.5          curl_6.0.1              DelayedArray_0.30.1    </span></span>
-<span id="cb8-105"><a href="#cb8-105" tabindex="-1"></a><span class="co">#&gt; [28] abind_1.4-8             pkgload_1.4.0           miniUI_0.1.1.1         </span></span>
-<span id="cb8-106"><a href="#cb8-106" tabindex="-1"></a><span class="co">#&gt; [31] withr_3.0.2             purrr_1.0.2             desc_1.4.3             </span></span>
-<span id="cb8-107"><a href="#cb8-107" tabindex="-1"></a><span class="co">#&gt; [34] grid_4.4.2              urlchecker_1.0.1        profvis_0.4.0          </span></span>
-<span id="cb8-108"><a href="#cb8-108" tabindex="-1"></a><span class="co">#&gt; [37] xtable_1.8-4            MASS_7.3-64             cli_3.6.3              </span></span>
-<span id="cb8-109"><a href="#cb8-109" tabindex="-1"></a><span class="co">#&gt; [40] rmarkdown_2.29          crayon_1.5.3            generics_0.1.3         </span></span>
-<span id="cb8-110"><a href="#cb8-110" tabindex="-1"></a><span class="co">#&gt; [43] remotes_2.5.0           rstudioapi_0.17.1       httr_1.4.7             </span></span>
-<span id="cb8-111"><a href="#cb8-111" tabindex="-1"></a><span class="co">#&gt; [46] sessioninfo_1.2.2       DBI_1.2.3               cachem_1.1.0           </span></span>
-<span id="cb8-112"><a href="#cb8-112" tabindex="-1"></a><span class="co">#&gt; [49] zlibbioc_1.50.0         AnnotationDbi_1.66.0    BiocManager_1.30.25    </span></span>
-<span id="cb8-113"><a href="#cb8-113" tabindex="-1"></a><span class="co">#&gt; [52] XVector_0.44.0          vctrs_0.6.5             devtools_2.4.5         </span></span>
-<span id="cb8-114"><a href="#cb8-114" tabindex="-1"></a><span class="co">#&gt; [55] Matrix_1.7-1            jsonlite_1.8.9          bookdown_0.41          </span></span>
-<span id="cb8-115"><a href="#cb8-115" tabindex="-1"></a><span class="co">#&gt; [58] callr_3.7.6             bit64_4.5.2             jquerylib_0.1.4        </span></span>
-<span id="cb8-116"><a href="#cb8-116" tabindex="-1"></a><span class="co">#&gt; [61] glue_1.8.0              ps_1.8.1                BiocVersion_3.19.1     </span></span>
-<span id="cb8-117"><a href="#cb8-117" tabindex="-1"></a><span class="co">#&gt; [64] later_1.4.1             UCSC.utils_1.0.0        tibble_3.2.1           </span></span>
-<span id="cb8-118"><a href="#cb8-118" tabindex="-1"></a><span class="co">#&gt; [67] pillar_1.10.0           rappdirs_0.3.3          htmltools_0.5.8.1      </span></span>
-<span id="cb8-119"><a href="#cb8-119" tabindex="-1"></a><span class="co">#&gt; [70] GenomeInfoDbData_1.2.12 R6_2.5.1                evaluate_1.0.1         </span></span>
-<span id="cb8-120"><a href="#cb8-120" tabindex="-1"></a><span class="co">#&gt; [73] shiny_1.10.0            lattice_0.22-6          png_0.1-8              </span></span>
-<span id="cb8-121"><a href="#cb8-121" tabindex="-1"></a><span class="co">#&gt; [76] memoise_2.0.1           httpuv_1.6.15           bslib_0.8.0            </span></span>
-<span id="cb8-122"><a href="#cb8-122" tabindex="-1"></a><span class="co">#&gt; [79] Rcpp_1.0.13-1           SparseArray_1.4.8       xfun_0.49              </span></span>
-<span id="cb8-123"><a href="#cb8-123" tabindex="-1"></a><span class="co">#&gt; [82] fs_1.6.5                usethis_3.1.0           pkgconfig_2.0.3</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="do">##(1) Check which LMM fittings converge.</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>cvg <span class="ot">&lt;-</span> (<span class="fu">apply</span>(<span class="fu">abs</span>(fit<span class="sc">$</span>dlogL), <span class="dv">2</span>, max) <span class="sc">&lt;</span> epsilon) </span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">sum</span>(cvg) </span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="do">##(2) Hypothesis testing for variance components:</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="do">##    H0, theta &lt;/= 0 vs H1, theta &gt; 0.</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>z <span class="ot">&lt;-</span> fit<span class="sc">$</span>theta[<span class="st">&quot;var1&quot;</span>, ]<span class="sc">/</span>fit<span class="sc">$</span>se.theta[<span class="st">&quot;var1&quot;</span>, ]</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(z, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="fu">sum</span>(p <span class="sc">&lt;=</span> <span class="fl">0.05</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; [1] 90</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="do">##(3) The DE genes specific to a cell-type</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values for the genes specific to a cell-type.</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>ce <span class="ot">&lt;-</span> fit<span class="sc">$</span>coef[index, cvg]</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>tv <span class="ot">&lt;-</span> fit<span class="sc">$</span>t[index, cvg]</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>pv <span class="ot">&lt;-</span> fit<span class="sc">$</span>p[index, cvg]</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>    <span class="at">gene =</span> <span class="fu">rep</span>(<span class="fu">colnames</span>(ce), <span class="fu">nrow</span>(ce)), </span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>    <span class="at">cluster =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(ce), <span class="at">each =</span> <span class="fu">ncol</span>(ce)),</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>    <span class="at">coef =</span> <span class="fu">c</span>(<span class="fu">t</span>(ce)), <span class="at">t =</span> <span class="fu">c</span>(<span class="fu">t</span>(tv)), <span class="at">p =</span> <span class="fu">c</span>(<span class="fu">t</span>(pv)))</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="do">##Adjust p-values by FDR.</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>out<span class="sc">$</span>FDR <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(out<span class="sc">$</span>p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>)</span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="do">##The top DE genes</span></span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="do">##The DE genes with FDR &lt; 0.05</span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>out[out<span class="sc">$</span>FDR <span class="sc">&lt;=</span> <span class="fl">0.05</span>, ]</span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;                      gene                   cluster         coef          t</span></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; 1                   PAIP2       CD4_T_cells:trtstim -0.162167570 -31.608283</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; 2  FUNDC2_ENSG00000165775   CD14p_Monocytes:trtstim -0.074345865 -20.422635</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; 3                    CD68           B_cells:trtstim  0.169924579  13.277008</span></span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a><span class="co">#&gt; 4                  INTS10 FCGR3Ap_Monocytes:trtstim -0.065494690 -10.789948</span></span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="co">#&gt; 5                    RCE1           B_cells:trtstim  0.023144076   6.429484</span></span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a><span class="co">#&gt; 6                   RBBP7          NK_cells:trtstim  0.044868013   6.049451</span></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a><span class="co">#&gt; 7                   MYADM   CD14p_Monocytes:trtstim  0.011748386   5.156422</span></span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a><span class="co">#&gt; 8                  CAMK2D       CD4_T_cells:trtstim -0.004915633  -4.975419</span></span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a><span class="co">#&gt; 9                  ZNF770    Megakaryocytes:trtstim  0.058368842   4.391255</span></span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a><span class="co">#&gt; 10                 MALSU1   Dendritic_cells:trtstim -0.033691602  -3.929134</span></span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a><span class="co">#&gt; 11                  N4BP1   CD14p_Monocytes:trtstim  0.013871752   3.812348</span></span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a><span class="co">#&gt; 12                   UTRN FCGR3Ap_Monocytes:trtstim  0.018717417   3.783530</span></span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a><span class="co">#&gt; 13                 FAM53B   Dendritic_cells:trtstim -0.017410267  -3.497165</span></span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a><span class="co">#&gt; 14                  NOC4L   Dendritic_cells:trtstim  0.026286349   3.481073</span></span>
+<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a><span class="co">#&gt; 15               C1orf174   CD14p_Monocytes:trtstim  0.010434876   3.449281</span></span>
+<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a><span class="co">#&gt; 16                    HGS FCGR3Ap_Monocytes:trtstim -0.013463985  -3.412442</span></span>
+<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a><span class="co">#&gt; 17                  BEST1   CD14p_Monocytes:trtstim  0.011185860   3.275000</span></span>
+<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a><span class="co">#&gt;                p           FDR</span></span>
+<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a><span class="co">#&gt; 1  2.257004e-218 1.805603e-215</span></span>
+<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a><span class="co">#&gt; 2   1.513410e-92  6.053640e-90</span></span>
+<span id="cb9-57"><a href="#cb9-57" tabindex="-1"></a><span class="co">#&gt; 3   3.359959e-40  8.959890e-38</span></span>
+<span id="cb9-58"><a href="#cb9-58" tabindex="-1"></a><span class="co">#&gt; 4   3.951917e-27  7.903833e-25</span></span>
+<span id="cb9-59"><a href="#cb9-59" tabindex="-1"></a><span class="co">#&gt; 5   1.285161e-10  2.056257e-08</span></span>
+<span id="cb9-60"><a href="#cb9-60" tabindex="-1"></a><span class="co">#&gt; 6   1.457681e-09  1.943575e-07</span></span>
+<span id="cb9-61"><a href="#cb9-61" tabindex="-1"></a><span class="co">#&gt; 7   2.521124e-07  2.881284e-05</span></span>
+<span id="cb9-62"><a href="#cb9-62" tabindex="-1"></a><span class="co">#&gt; 8   6.519633e-07  6.519633e-05</span></span>
+<span id="cb9-63"><a href="#cb9-63" tabindex="-1"></a><span class="co">#&gt; 9   1.127945e-05  1.002618e-03</span></span>
+<span id="cb9-64"><a href="#cb9-64" tabindex="-1"></a><span class="co">#&gt; 10  8.530013e-05  6.824010e-03</span></span>
+<span id="cb9-65"><a href="#cb9-65" tabindex="-1"></a><span class="co">#&gt; 11  1.377216e-04  1.001611e-02</span></span>
+<span id="cb9-66"><a href="#cb9-66" tabindex="-1"></a><span class="co">#&gt; 12  1.546949e-04  1.031299e-02</span></span>
+<span id="cb9-67"><a href="#cb9-67" tabindex="-1"></a><span class="co">#&gt; 13  4.704017e-04  2.854777e-02</span></span>
+<span id="cb9-68"><a href="#cb9-68" tabindex="-1"></a><span class="co">#&gt; 14  4.995860e-04  2.854777e-02</span></span>
+<span id="cb9-69"><a href="#cb9-69" tabindex="-1"></a><span class="co">#&gt; 15  5.622747e-04  2.998798e-02</span></span>
+<span id="cb9-70"><a href="#cb9-70" tabindex="-1"></a><span class="co">#&gt; 16  6.440482e-04  3.220241e-02</span></span>
+<span id="cb9-71"><a href="#cb9-71" tabindex="-1"></a><span class="co">#&gt; 17  1.056919e-03  4.973737e-02</span></span>
+<span id="cb9-72"><a href="#cb9-72" tabindex="-1"></a></span>
+<span id="cb9-73"><a href="#cb9-73" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb9-74"><a href="#cb9-74" tabindex="-1"></a><span class="co">#&gt; R version 4.4.3 (2025-02-28)</span></span>
+<span id="cb9-75"><a href="#cb9-75" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
+<span id="cb9-76"><a href="#cb9-76" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
+<span id="cb9-77"><a href="#cb9-77" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-78"><a href="#cb9-78" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb9-79"><a href="#cb9-79" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
+<span id="cb9-80"><a href="#cb9-80" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
+<span id="cb9-81"><a href="#cb9-81" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-82"><a href="#cb9-82" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb9-83"><a href="#cb9-83" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb9-84"><a href="#cb9-84" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-85"><a href="#cb9-85" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
+<span id="cb9-86"><a href="#cb9-86" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb9-87"><a href="#cb9-87" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-88"><a href="#cb9-88" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb9-89"><a href="#cb9-89" tabindex="-1"></a><span class="co">#&gt; [1] stats4    stats     graphics  grDevices utils     datasets  methods  </span></span>
+<span id="cb9-90"><a href="#cb9-90" tabindex="-1"></a><span class="co">#&gt; [8] base     </span></span>
+<span id="cb9-91"><a href="#cb9-91" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-92"><a href="#cb9-92" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb9-93"><a href="#cb9-93" tabindex="-1"></a><span class="co">#&gt;  [1] muscData_1.20.0             SingleCellExperiment_1.28.1</span></span>
+<span id="cb9-94"><a href="#cb9-94" tabindex="-1"></a><span class="co">#&gt;  [3] SummarizedExperiment_1.36.0 Biobase_2.66.0             </span></span>
+<span id="cb9-95"><a href="#cb9-95" tabindex="-1"></a><span class="co">#&gt;  [5] GenomicRanges_1.58.0        GenomeInfoDb_1.42.1        </span></span>
+<span id="cb9-96"><a href="#cb9-96" tabindex="-1"></a><span class="co">#&gt;  [7] IRanges_2.40.1              S4Vectors_0.44.0           </span></span>
+<span id="cb9-97"><a href="#cb9-97" tabindex="-1"></a><span class="co">#&gt;  [9] MatrixGenerics_1.18.1       matrixStats_1.5.0          </span></span>
+<span id="cb9-98"><a href="#cb9-98" tabindex="-1"></a><span class="co">#&gt; [11] ExperimentHub_2.14.0        AnnotationHub_3.14.0       </span></span>
+<span id="cb9-99"><a href="#cb9-99" tabindex="-1"></a><span class="co">#&gt; [13] BiocFileCache_2.14.0        dbplyr_2.5.0               </span></span>
+<span id="cb9-100"><a href="#cb9-100" tabindex="-1"></a><span class="co">#&gt; [15] BiocGenerics_0.52.0         FLASHMM_1.1.0              </span></span>
+<span id="cb9-101"><a href="#cb9-101" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-102"><a href="#cb9-102" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb9-103"><a href="#cb9-103" tabindex="-1"></a><span class="co">#&gt;  [1] tidyselect_1.2.1        dplyr_1.1.4             blob_1.2.4             </span></span>
+<span id="cb9-104"><a href="#cb9-104" tabindex="-1"></a><span class="co">#&gt;  [4] filelock_1.0.3          Biostrings_2.74.1       fastmap_1.2.0          </span></span>
+<span id="cb9-105"><a href="#cb9-105" tabindex="-1"></a><span class="co">#&gt;  [7] promises_1.3.2          digest_0.6.37           mime_0.12              </span></span>
+<span id="cb9-106"><a href="#cb9-106" tabindex="-1"></a><span class="co">#&gt; [10] lifecycle_1.0.4         ellipsis_0.3.2          processx_3.8.6         </span></span>
+<span id="cb9-107"><a href="#cb9-107" tabindex="-1"></a><span class="co">#&gt; [13] KEGGREST_1.46.0         RSQLite_2.3.9           magrittr_2.0.3         </span></span>
+<span id="cb9-108"><a href="#cb9-108" tabindex="-1"></a><span class="co">#&gt; [16] compiler_4.4.3          rlang_1.1.5             sass_0.4.9             </span></span>
+<span id="cb9-109"><a href="#cb9-109" tabindex="-1"></a><span class="co">#&gt; [19] tools_4.4.3             yaml_2.3.10             knitr_1.49             </span></span>
+<span id="cb9-110"><a href="#cb9-110" tabindex="-1"></a><span class="co">#&gt; [22] S4Arrays_1.6.0          htmlwidgets_1.6.4       bit_4.5.0.1            </span></span>
+<span id="cb9-111"><a href="#cb9-111" tabindex="-1"></a><span class="co">#&gt; [25] pkgbuild_1.4.6          curl_6.2.1              DelayedArray_0.32.0    </span></span>
+<span id="cb9-112"><a href="#cb9-112" tabindex="-1"></a><span class="co">#&gt; [28] abind_1.4-8             pkgload_1.4.0           miniUI_0.1.1.1         </span></span>
+<span id="cb9-113"><a href="#cb9-113" tabindex="-1"></a><span class="co">#&gt; [31] withr_3.0.2             purrr_1.0.4             desc_1.4.3             </span></span>
+<span id="cb9-114"><a href="#cb9-114" tabindex="-1"></a><span class="co">#&gt; [34] grid_4.4.3              urlchecker_1.0.1        profvis_0.4.0          </span></span>
+<span id="cb9-115"><a href="#cb9-115" tabindex="-1"></a><span class="co">#&gt; [37] xtable_1.8-4            MASS_7.3-64             cli_3.6.4              </span></span>
+<span id="cb9-116"><a href="#cb9-116" tabindex="-1"></a><span class="co">#&gt; [40] rmarkdown_2.29          crayon_1.5.3            generics_0.1.3         </span></span>
+<span id="cb9-117"><a href="#cb9-117" tabindex="-1"></a><span class="co">#&gt; [43] remotes_2.5.0           rstudioapi_0.17.1       httr_1.4.7             </span></span>
+<span id="cb9-118"><a href="#cb9-118" tabindex="-1"></a><span class="co">#&gt; [46] sessioninfo_1.2.3       DBI_1.2.3               cachem_1.1.0           </span></span>
+<span id="cb9-119"><a href="#cb9-119" tabindex="-1"></a><span class="co">#&gt; [49] zlibbioc_1.52.0         AnnotationDbi_1.68.0    BiocManager_1.30.25    </span></span>
+<span id="cb9-120"><a href="#cb9-120" tabindex="-1"></a><span class="co">#&gt; [52] XVector_0.46.0          vctrs_0.6.5             devtools_2.4.5         </span></span>
+<span id="cb9-121"><a href="#cb9-121" tabindex="-1"></a><span class="co">#&gt; [55] Matrix_1.7-2            jsonlite_1.9.1          bookdown_0.42          </span></span>
+<span id="cb9-122"><a href="#cb9-122" tabindex="-1"></a><span class="co">#&gt; [58] callr_3.7.6             bit64_4.5.2             jquerylib_0.1.4        </span></span>
+<span id="cb9-123"><a href="#cb9-123" tabindex="-1"></a><span class="co">#&gt; [61] glue_1.8.0              ps_1.9.0                BiocVersion_3.20.0     </span></span>
+<span id="cb9-124"><a href="#cb9-124" tabindex="-1"></a><span class="co">#&gt; [64] later_1.4.1             UCSC.utils_1.2.0        tibble_3.2.1           </span></span>
+<span id="cb9-125"><a href="#cb9-125" tabindex="-1"></a><span class="co">#&gt; [67] pillar_1.10.1           rappdirs_0.3.3          htmltools_0.5.8.1      </span></span>
+<span id="cb9-126"><a href="#cb9-126" tabindex="-1"></a><span class="co">#&gt; [70] GenomeInfoDbData_1.2.13 R6_2.6.1                evaluate_1.0.3         </span></span>
+<span id="cb9-127"><a href="#cb9-127" tabindex="-1"></a><span class="co">#&gt; [73] shiny_1.10.0            lattice_0.22-6          png_0.1-8              </span></span>
+<span id="cb9-128"><a href="#cb9-128" tabindex="-1"></a><span class="co">#&gt; [76] memoise_2.0.1           httpuv_1.6.15           bslib_0.9.0            </span></span>
+<span id="cb9-129"><a href="#cb9-129" tabindex="-1"></a><span class="co">#&gt; [79] Rcpp_1.0.14             SparseArray_1.6.0       xfun_0.51              </span></span>
+<span id="cb9-130"><a href="#cb9-130" tabindex="-1"></a><span class="co">#&gt; [82] fs_1.6.5                usethis_3.1.0.9000      pkgconfig_2.0.3</span></span></code></pre></div>
 </div>
 </div>
 </div>

@@ -5,23 +5,23 @@ knitr::opts_chunk$set(
 )
 
 ## ----echo = TRUE, results = "hide", message = FALSE---------------------------
-#Install FLASHMM from Github.
+##Install FLASHMM from CRAN.
+# install.packages("FLASHMM")
+##Install FLASHMM from Github.
 devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
-#Load the package.
+##Load the package.
 library(FLASHMM)
 
 ## ----dataset, message = FALSE-------------------------------------------------
 set.seed(2412)
-dat <- simuRNAseq(nGenes = 50, nCells = 1000, 
-                  nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
-
+dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
 names(dat)
-##
 
 #counts and meta data
 counts <- dat$counts
 metadata <- dat$metadata
+head(metadata)
 rm(dat)
 
 ## -----------------------------------------------------------------------------
@@ -34,13 +34,13 @@ Y <- log(counts + 1)
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
 Z <- model.matrix(~ 0 + sam, data = metadata)
 d <- ncol(Z)
-##
 
 ##(2) LMM fitting
-##Fit LMM by lmmfit using cell-level data.
+
+##Option 1: fit LMM by lmmfit using cell-level data.
 fit <- lmmfit(Y, X, Z, d = d)
 
-##Fit LMM by lmm using summary-level data computed as follows.
+##Option 2: fit LMM by lmm using summary-level data.
 ##- Computing summary statistics
 n <- nrow(X)
 XX <- t(X)%*%X; XY <- t(Y%*%X)
@@ -50,29 +50,39 @@ Ynorm <- rowSums(Y*Y)
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
 
 identical(fit, fitss)
-##
-
-##Fit LMM by lmm using summary-level data computed by sslmm.
-##- Computing summary statistics
-ss <- sslmm(X, Y, Z)
-##- Fitting LMM
-fitss <- lmm(summary.stats = ss, d = d)
-
-identical(fit, fitss)
-##
 
 ##(3) Hypothesis tests
+##Testing coefficients (fixed effects)
 test <- lmmtest(fit)
 #head(test)
 
-##t-values
-all(t(fit$t) == test[, grep("_t", colnames(test))])
-fit$t[, 1:5]
+##The testing t-value and p-values are also provided in the LMM fit.
+range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
+#fit$coef[, 1:4]
+#fit$t[, 1:4]
+fit$p[, 1:4]
 ##
 
-##p-values
-all(t(fit$p) == test[, grep("_p", colnames(test))])
-fit$p[, 1:5]
+##Testing contrasts
+##We can make comparisons using contrasts. For example, 
+##the effects of treatment B vs A in all clusters can be tested 
+##using the contrast constructed as follows:
+ct <- numeric(ncol(X))
+names(ct) <- colnames(X)
+index <- grep("B", colnames(X))
+ct[index] <- 1/length(index)
+ct
+test <- lmmtest(fit, contrast = ct)
+head(test)
+
+
+## ----include = TRUE, echo = TRUE, message = FALSE-----------------------------
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (!requireNamespace("ExperimentHub", quietly = TRUE))
+    BiocManager::install("ExperimentHub")
+if (!requireNamespace("SingleCellExperiment", quietly = TRUE))
+    BiocManager::install("SingleCellExperiment")
 
 ## ----Reference dataset, echo = TRUE, message = FALSE--------------------------
 library(ExperimentHub)
@@ -128,6 +138,7 @@ dat$counts <- NULL #Remove the counts.
 
 ##Design matrix for fixed effects
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$meta)
+colnames(X) <- gsub("cls", "", colnames(X))
 colnames(X) <- gsub("\\+", "p", colnames(X))
 colnames(X) <- gsub(" ", "_", colnames(X))
 
@@ -139,14 +150,14 @@ d <- ncol(Z)
 
 ## ----LMM fitting, echo = TRUE, message = FALSE, warning = FALSE---------------
   
-##(1) Fit LMM by cell-level data.
+##Option 1: fit LMM by cell-level data.
 max.iter <- 100
 epsilon <- 1e-5
 fit <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
-str(fit)
+names(fit)
 ##
 
-##(2) Fit LMM by summary-level data.
+##Option 2: fit LMM by summary-level data.
 ##- Compute the summary-level data.
 n <- nrow(X)
 XX <- t(X)%*%X
@@ -167,7 +178,8 @@ rm(fitss)
 ##Test the treatment effect within all cell-types.
 ##- Construct a contrast by summing the treatment effects across cell-types.
 contrast <- cbind("trt" = numeric(nrow(fit$coef)))
-contrast[grep(":", rownames(fit$coef)), ] <- 1
+index <- grep(":", rownames(fit$coef))
+contrast[index, ] <- 1/length(index)
 
 ##- Test the contrast.
 test <- lmmtest(fit, contrast = contrast)
@@ -189,25 +201,25 @@ sum(p <= 0.05)
 ##
 
 ##(3) The DE genes specific to a cell-type
-##Coefficients and p-values for the genes specific to a cell-type.
+##Coefficients, t-values, and p-values for the genes specific to a cell-type.
 index <- grep(":", rownames(fit$coef))
-beta <- t(fit$coef[index, cvg])
-p <- t(fit$p[index, cvg])
+ce <- fit$coef[index, cvg]
+tv <- fit$t[index, cvg]
+pv <- fit$p[index, cvg]
+
+out <- data.frame(
+	gene = rep(colnames(ce), nrow(ce)), 
+	cluster = rep(rownames(ce), each = ncol(ce)),
+	coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
 
 ##Adjust p-values by FDR.
-padj <- matrix(p.adjust(c(p), method = "fdr"), nrow = nrow(p), ncol = ncol(p))
+out$FDR <- p.adjust(out$p, method = "fdr")
 
-##The DE genes specific to a cell cluster with FDR < 0.05.
-degenes <- NULL
-for (j in 1:ncol(p)){
-  i <- (padj[, j] < 0.05)
-  if (sum(i) > 0) degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j], FDR = padj[i, j]))
-}
-rownames(degenes) <- NULL
-degenes
-
-##The simulated DE genes
-dat$DEgenes
+##The top DE genes
+##The DE genes with FDR < 0.05
+out <- out[order(out$p), ]
+rownames(out) <- NULL
+out[out$FDR <= 0.05, ]
 
 sessionInfo()
 
