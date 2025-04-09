@@ -8,7 +8,7 @@ knitr::opts_chunk$set(
 ##Install FLASHMM from CRAN.
 # install.packages("FLASHMM")
 ##Install FLASHMM from Github.
-devtools::install_github("https://github.com/Baderlab/FLASHMM")
+# devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 ##Load the package.
 library(FLASHMM)
@@ -16,7 +16,7 @@ library(FLASHMM)
 ## ----Reference dataset, echo = TRUE, message = FALSE--------------------------
 ##Generate a reference dataset by simuRNAseq function.
 set.seed(2502)
-refdata <- simuRNAseq(nGenes = 2000, nCells = 10000)
+refdata <- simuRNAseq(nGenes = 1000, nCells = 10000)
 
 ##counts
 counts <- refdata$counts
@@ -65,7 +65,7 @@ ZY <- t(Y%*%Z)
 ZZ <- t(Z)%*%Z
 Ynorm <- rowSums(Y*Y)
 
-#rm(X, Y, Z) #release the memory.
+rm(X, Y, Z) #release the memory.
 
 ##(2) Fit LMM.
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, 
@@ -82,13 +82,14 @@ test <- lmmtest(fit)
 
 ##The testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p))) #identical
-fit$t[, 1:4]
+#fit$t[, 1:4]
 #fit$p[, 1:4]
+fit$coef[, 1:4]
 
 ## -----------------------------------------------------------------------------
 contrast <- cbind("BvsA" = numeric(nrow(fit$coef)))
 index <- grep(":", rownames(fit$coef))
-contrast[index, ] <- 1
+contrast[index, ] <- 1/length(index)
 
 ##Test the contrast.
 test <- lmmtest(fit, contrast = contrast)
@@ -97,6 +98,8 @@ head(test)
 
 ## -----------------------------------------------------------------------------
 BvsA <- paste0(paste0("cls", 1:10, ":trtB"), collapse = "+")
+BvsA <- paste0("(", BvsA, ")/10")
+BvsA
 contrast <- contrast.matrix(contrast = c(BvsA = BvsA), model.matrix.names = rownames(fit$coef))
 test <- lmmtest(fit, contrast = contrast)
 head(test)
@@ -137,9 +140,9 @@ out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 
 ## ----LMM_ML, echo = TRUE, message = FALSE, warning = FALSE--------------------
 ##Fitting LMM by ML method
-fit <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
-
-rm(X, Y, Z)
+#fit <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
+fit <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, method = "ML",
+             max.iter = max.iter, epsilon = epsilon)
 
 ##The DE genes specific to a cell-type
 ##Coefficients, t-values, and p-values

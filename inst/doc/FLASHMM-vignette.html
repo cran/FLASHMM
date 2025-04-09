@@ -12,7 +12,7 @@
 
 <meta name="author" content="Changjiang Xu, Delaram Pouyabahar, Veronique Voisin, and Gary D. Bader" />
 
-<meta name="date" content="2025-03-31" />
+<meta name="date" content="2025-04-09" />
 
 <title>Single-cell differential expression analysis with FLASHMM</title>
 
@@ -375,7 +375,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 analysis with FLASHMM</h1>
 <h4 class="author">Changjiang Xu, Delaram Pouyabahar, Veronique Voisin,
 and Gary D. Bader</h4>
-<h4 class="date">March 31, 2025</h4>
+<h4 class="date">April 09, 2025</h4>
 <div class="abstract">
 <p class="abstract">Abstract</p>
 FLASHMM is a package for single-cell differential expression analysis
@@ -472,11 +472,9 @@ modified maximum likelihood procedure which partitions the data into two
 mutually uncorrelated parts, one being free of the fixed effects used
 for estimating variance components, called restricted maximum likelihood
 (REML) method. The REML estimator is unbiased. The ML estimator of
-variance components is biased in general. Both methods are
-asymptotically identical for estimating variance components. With
-variance components, <span class="math inline">\(\theta\)</span>,
-estimated, the fixed effects estimated by either ML or REML are given as
-follows <span class="math display">\[
+variance components is biased in general. With variance components,
+<span class="math inline">\(\theta\)</span>, estimated, the fixed
+effects estimated by either ML or REML are given as follows <span class="math display">\[
 \hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
 \]</span> with covariance matrix <span class="math display">\[var(\hat\beta) =
 (X^TV_{\theta}^{-1}X)^{-1},\]</span> where <span class="math inline">\(\theta = (\theta_0, \theta_1,\ldots,
@@ -593,7 +591,7 @@ dataset based on a negative binomial distribution.</li>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="do">##Install FLASHMM from CRAN.</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># install.packages(&quot;FLASHMM&quot;)</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="do">##Install FLASHMM from Github.</span></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;https://github.com/Baderlab/FLASHMM&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># devtools::install_github(&quot;https://github.com/Baderlab/FLASHMM&quot;)</span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="do">##Load the package.</span></span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">library</span>(FLASHMM)</span></code></pre></div>
@@ -611,7 +609,7 @@ treatments (conditions) within a cell type.</p>
 scRNA-seq data</h2>
 <p>We simulate the multi-sample multi-cell-type scRNA-seq data by
 simuRNAseq function in FLASHMM package. The simuRNAseq function can
-generate the scRNA-seq data, with or without a reference dataset. The
+generate scRNA-seq data, with or without a reference dataset. The
 reference dataset contains count data and metadata. The count data is a
 genes-by-cells matrix. The metadata must be a data frame containing
 three columns: samples (subjects), cell-types (clusters), and treatments
@@ -622,7 +620,7 @@ reference dataset to generate the scRNA-seq data. First we simulate the
 reference dataset.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="do">##Generate a reference dataset by simuRNAseq function.</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2502</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>refdata <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">2000</span>, <span class="at">nCells =</span> <span class="dv">10000</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>refdata <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">1000</span>, <span class="at">nCells =</span> <span class="dv">10000</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="do">##counts</span></span>
 <span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>counts <span class="ot">&lt;-</span> refdata<span class="sc">$</span>counts</span>
@@ -630,12 +628,12 @@ reference dataset.</p>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> refdata<span class="sc">$</span>metadata</span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="fu">head</span>(metadata)</span>
 <span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;       sam cls trt libsize</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; Cell1  A1  10   A    3783</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; Cell2  A3  10   A    3906</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Cell3 B12  10   B    3956</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; Cell4  A7   3   A    3867</span></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; Cell5  B5   3   B    3974</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; Cell6 B13   4   B    3886</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; Cell1  A5   9   A    1941</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; Cell2  A9   9   A    1951</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Cell3  A3   8   A    2005</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; Cell4  A6   3   A    1906</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; Cell5  B8   5   B    1913</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; Cell6 A11   4   A    1985</span></span>
 <span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a></span>
 <span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="fu">rm</span>(refdata)</span></code></pre></div>
 <p>For the simulated reference dataset, we don’t need to change the
@@ -653,22 +651,22 @@ differentially expressed genes.</p>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>       <span class="at">ncls =</span> <span class="dv">10</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">10</span>, <span class="at">minbeta =</span> <span class="fl">0.5</span>, <span class="at">maxbeta =</span> <span class="dv">1</span>, <span class="at">var.randomeffects =</span> <span class="fl">0.1</span>)</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">str</span>(dat)</span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; List of 5</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 2000 obs. of  2 variables:</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:2000] 3.7 3.192 0.963 4.519 1.927 ...</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:2000] 1.119 0.841 0.861 0.905 1.667 ...</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 1000 obs. of  2 variables:</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:1000] 3.19 3.56 1.02 4.24 2.11 ...</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:1000] 0.814 1.476 0.791 0.829 2.319 ...</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;  $ metadata           :&#39;data.frame&#39;: 100000 obs. of  4 variables:</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : chr [1:100000] &quot;A4&quot; &quot;B15&quot; &quot;B13&quot; &quot;B1&quot; ...</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : chr [1:100000] &quot;4&quot; &quot;6&quot; &quot;3&quot; &quot;2&quot; ...</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : chr [1:100000] &quot;A&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; ...</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:100000] 3871 4223 4241 4189 4253 ...</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:100000] 1 10 2 0 0 2 1 1 5 0 ...</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : chr [1:100000] &quot;B10&quot; &quot;A2&quot; &quot;A10&quot; &quot;A3&quot; ...</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : chr [1:100000] &quot;8&quot; &quot;6&quot; &quot;3&quot; &quot;1&quot; ...</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : chr [1:100000] &quot;B&quot; &quot;A&quot; &quot;A&quot; &quot;A&quot; ...</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:100000] 2292 2108 2176 1938 2183 ...</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:100000] 0 2 3 0 1 0 1 0 7 4 ...</span></span>
 <span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1284&quot; &quot;Gene724&quot; &quot;Gene774&quot; &quot;Gene1640&quot; ...</span></span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100000] &quot;Cell7546&quot; &quot;Cell9224&quot; &quot;Cell3950&quot; &quot;Cell530&quot; ...</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene260&quot; &quot;Gene724&quot; &quot;Gene774&quot; &quot;Gene616&quot; ...</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100000] &quot;Cell9224&quot; &quot;Cell3950&quot; &quot;Cell530&quot; &quot;Cell2039&quot; ...</span></span>
 <span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt;  $ DEgenes            :&#39;data.frame&#39;: 10 obs. of  3 variables:</span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;Gene1537&quot; &quot;Gene1225&quot; &quot;Gene864&quot; &quot;Gene1546&quot; ...</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] -0.776 0.977 0.819 -0.532 0.896 ...</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;1&quot; &quot;1&quot; &quot;10&quot; &quot;2&quot; ...</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;Gene201&quot; &quot;Gene864&quot; &quot;Gene522&quot; &quot;Gene597&quot; ...</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] 0.977 0.819 -0.532 0.896 0.887 ...</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;1&quot; &quot;10&quot; &quot;2&quot; &quot;2&quot; ...</span></span>
 <span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;  $ treatment          : chr &quot;B&quot;</span></span>
 <span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="fu">rm</span>(counts, metadata)</span></code></pre></div>
 <p>The simulated data contains a genes-by-cells matrix of expression
@@ -703,9 +701,8 @@ Z = model.matrix(\sim 0 + subject).
 \]</span></p>
 <p><strong>LMM fitting and hypothesis testing</strong>: We use either
 lmm or lmmfit function to fit LMMs for all genes. With the cell-level
-data matrices <span class="math inline">\(Y\)</span>, <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span>, the LMMs can be fit by <span class="math display">\[lmmfit(Y, X, Z, d = d),\]</span> where <span class="math inline">\(d\)</span> is the number of random-effects. For
-<span class="math inline">\(K\)</span> components of random-effects,
-<span class="math inline">\(d = (q_1, \ldots, q_K)\)</span>, where <span class="math inline">\(q_k\)</span> is the number of columns of the
+data matrices <span class="math inline">\(Y\)</span>, <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span>, the LMMs can be fit by <span class="math display">\[lmmfit(Y, X, Z, d = d),\]</span> where <span class="math inline">\(d\)</span> is a vector of the numbers of
+random-effects in different components. For <span class="math inline">\(K\)</span> components of random-effects, <span class="math inline">\(d = (q_1, \ldots, q_K)\)</span>, where <span class="math inline">\(q_k\)</span> is the number of columns of the
 design matrix <span class="math inline">\(Z_k\)</span> for the <span class="math inline">\(k\)</span>-th random-effect component. For a
 large-scale data, the lmmfit function has a problem of computer memory
 limit. In this case, it is recommended to pre-compute and store the
@@ -774,7 +771,7 @@ change).</p>
 <span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>ZZ <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>Z</span>
 <span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>Ynorm <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(Y<span class="sc">*</span>Y)</span>
 <span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#rm(X, Y, Z) #release the memory.</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z) <span class="co">#release the memory.</span></span>
 <span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a></span>
 <span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="do">##(2) Fit LMM.</span></span>
 <span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, </span>
@@ -794,61 +791,65 @@ testing</h3>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="do">##The testing t-value and p-values are also provided in the LMM fit.</span></span>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">range</span>(test <span class="sc">-</span> <span class="fu">cbind</span>(<span class="fu">t</span>(fit<span class="sc">$</span>coef), <span class="fu">t</span>(fit<span class="sc">$</span>t), <span class="fu">t</span>(fit<span class="sc">$</span>p))) <span class="co">#identical</span></span>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; [1] 0 0</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>fit<span class="sc">$</span>t[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt;                Gene1284    Gene724   Gene774     Gene1640</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; log(libsize)  9.9759533  8.0716046  8.464515 11.733608189</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; cls1         -8.5235110 -6.2329553 -6.832948 -9.380086777</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; cls10        -8.5255532 -6.2200933 -6.837642 -9.419146247</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; cls2         -8.5217821 -6.2340030 -6.856771 -9.438549994</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; cls3         -8.5112809 -6.2549674 -6.837254 -9.413566707</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; cls4         -8.4927904 -6.2509868 -6.839934 -9.465023927</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; cls5         -8.4831034 -6.2498292 -6.826692 -9.420796030</span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; cls6         -8.5360323 -6.2482795 -6.807689 -9.406666370</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; cls7         -8.5148922 -6.2413472 -6.824715 -9.423283104</span></span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; cls8         -8.5167202 -6.2280231 -6.798070 -9.474213289</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; cls9         -8.5215811 -6.2299695 -6.826893 -9.421405553</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; cls1:trtB    -0.5179175 -1.1777057 -2.705067 -0.049377689</span></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; cls10:trtB   -0.9129030 -1.3374074 -2.475557  0.104072809</span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; cls2:trtB    -0.7909786 -1.3742843 -2.449153  0.090249259</span></span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; cls3:trtB    -0.4802567 -1.0931098 -2.166174  0.002291076</span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; cls4:trtB    -0.9343680 -0.8571119 -2.414451  0.385714623</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; cls5:trtB    -1.0912380 -1.0671190 -2.656099  0.100235459</span></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; cls6:trtB    -0.7027346 -1.1206126 -2.681735 -0.050294720</span></span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; cls7:trtB    -0.8126754 -1.3489945 -2.919291  0.123471857</span></span>
-<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; cls8:trtB    -0.7190897 -1.2683630 -2.969423  0.316759560</span></span>
-<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; cls9:trtB    -0.7692254 -1.2075415 -2.679188  0.094227192</span></span>
-<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#fit$p[, 1:4]</span></span></code></pre></div>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#fit$t[, 1:4]</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#fit$p[, 1:4]</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>fit<span class="sc">$</span>coef[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt;                   Gene260    Gene724     Gene774     Gene616</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; log(libsize)  0.823538186  0.9338158  0.84825642  0.47303182</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; cls1         -5.033788454 -5.4098141 -5.22008950 -3.01064722</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; cls10        -5.016216620 -5.4194900 -5.23064461 -2.97351422</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; cls2         -5.023813654 -5.4187129 -5.23977394 -2.96924442</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; cls3         -4.997721940 -5.3974915 -5.23458730 -2.97942173</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; cls4         -5.020303938 -5.4443891 -5.22523214 -2.98406521</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; cls5         -5.034040308 -5.4158073 -5.21912587 -2.96949879</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; cls6         -5.039858094 -5.4040391 -5.22563185 -3.01283214</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; cls7         -5.032770530 -5.4027480 -5.21182988 -2.96310244</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; cls8         -5.027633571 -5.4037420 -5.22567389 -2.99787326</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; cls9         -5.011484228 -5.3934569 -5.21931480 -2.97552877</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; cls1:trtB     0.042932556 -0.2901492 -0.05952280  0.11278682</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; cls10:trtB    0.027706615 -0.2490376 -0.03298227  0.05911209</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; cls2:trtB     0.043924185 -0.2725758 -0.06385726  0.06042628</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; cls3:trtB     0.034137125 -0.2807799 -0.03698257  0.04462700</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; cls4:trtB     0.048231220 -0.2272270 -0.01519083  0.08609152</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; cls5:trtB     0.040408456 -0.2817817 -0.05896284  0.05373212</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; cls6:trtB     0.075970031 -0.2511360 -0.03689410  0.11972056</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; cls7:trtB     0.029742613 -0.2712344 -0.07932668  0.06190330</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; cls8:trtB     0.021522916 -0.2660295 -0.04673630  0.07685644</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; cls9:trtB     0.005106265 -0.3013190 -0.08311758  0.06462308</span></span></code></pre></div>
 <p>The coefficients of the interaction term cls<span class="math inline">\(\ast\)</span>:trtB represent the effects of the
 treatment B versus A in a cell-type (cls<span class="math inline">\(\ast\)</span>). We can make a comparison of the
 treatment B versus A within all cell-types by constructing a contrast by
 summing the treatment effects across cell-types as follows.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="st">&quot;BvsA&quot;</span> <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(fit<span class="sc">$</span>coef)))</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>contrast[index, ] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>contrast[index, ] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">length</span>(index)</span>
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="do">##Test the contrast.</span></span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">head</span>(test)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t      BvsA_p</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; Gene1284 -0.5737701 -0.7894025 0.429878675</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Gene724  -1.3981410 -1.2095726 0.226445815</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; Gene774  -1.7344350 -2.7313493 0.006308665</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; Gene1640  0.1737108  0.1126195 0.910332422</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; Gene1605 -0.1172052 -0.1236708 0.901576156</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; Gene591  -0.7280169 -0.9918408 0.321277571</span></span></code></pre></div>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t     BvsA_p</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; Gene260  0.03696820  0.4499201 0.65276901</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Gene724 -0.26912699 -2.0665983 0.03877459</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; Gene774 -0.05135733 -0.4228609 0.67239767</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; Gene616  0.07398792  1.4665370 0.14250518</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; Gene581  0.05802063  0.7702806 0.44113530</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; Gene591 -0.06573230 -0.8597515 0.38992809</span></span></code></pre></div>
 <p>The contrast can also be constructed by contrast.matrix function as
 follows.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>BvsA <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">paste0</span>(<span class="st">&quot;cls&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="st">&quot;:trtB&quot;</span>), <span class="at">collapse =</span> <span class="st">&quot;+&quot;</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">contrast.matrix</span>(<span class="at">contrast =</span> <span class="fu">c</span>(<span class="at">BvsA =</span> BvsA), <span class="at">model.matrix.names =</span> <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">head</span>(test)</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t      BvsA_p</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; Gene1284 -0.5737701 -0.7894025 0.429878675</span></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; Gene724  -1.3981410 -1.2095726 0.226445815</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; Gene774  -1.7344350 -2.7313493 0.006308665</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Gene1640  0.1737108  0.1126195 0.910332422</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Gene1605 -0.1172052 -0.1236708 0.901576156</span></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Gene591  -0.7280169 -0.9918408 0.321277571</span></span></code></pre></div>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>BvsA <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;(&quot;</span>, BvsA, <span class="st">&quot;)/10&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>BvsA</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;(cls1:trtB+cls2:trtB+cls3:trtB+cls4:trtB+cls5:trtB+cls6:trtB+cls7:trtB+cls8:trtB+cls9:trtB+cls10:trtB)/10&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">contrast.matrix</span>(<span class="at">contrast =</span> <span class="fu">c</span>(<span class="at">BvsA =</span> BvsA), <span class="at">model.matrix.names =</span> <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="fu">head</span>(test)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t     BvsA_p</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Gene260  0.03696820  0.4499201 0.65276901</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Gene724 -0.26912699 -2.0665983 0.03877459</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Gene774 -0.05135733 -0.4228609 0.67239767</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Gene616  0.07398792  1.4665370 0.14250518</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Gene581  0.05802063  0.7702806 0.44113530</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Gene591 -0.06573230 -0.8597515 0.38992809</span></span></code></pre></div>
 </div>
 <div id="exploring-lmm-fit-and-the-de-genes" class="section level3" number="2.2.4">
 <h3><span class="header-section-number">2.2.4</span> Exploring LMM fit
@@ -884,25 +885,27 @@ and the DE genes</h3>
 <span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
 <span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
 <span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;       gene    cluster       coef         t            p          FDR</span></span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt; 1 Gene1474  cls9:trtB  0.7522080 11.847221 2.338315e-32 2.338315e-29</span></span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt; 2 Gene1621  cls3:trtB  0.7202221 10.385943 2.959496e-25 1.479748e-22</span></span>
-<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt; 3 Gene1225  cls1:trtB  1.0430644  9.420141 4.596390e-21 1.532130e-18</span></span>
-<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt; 4 Gene1480  cls3:trtB  0.8160513  6.528223 6.687145e-11 1.671786e-08</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; 5  Gene864 cls10:trtB  0.5329352  5.805523 6.435866e-09 1.287173e-06</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; 6 Gene1723  cls7:trtB -0.6311016 -5.444817 5.198041e-08 8.663402e-06</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; 7 Gene1537  cls1:trtB -0.6764918 -5.195038 2.050789e-07 2.929699e-05</span></span>
-<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a></span>
-<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="do">##The true DE genes</span></span>
-<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a><span class="co">#dat$DEgenes</span></span></code></pre></div>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;      gene    cluster       coef         t            p          FDR</span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt; 1 Gene456  cls4:trtB  0.6159160 10.144524 3.600651e-24 3.600651e-21</span></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt; 2 Gene201  cls1:trtB  0.7149779  8.625628 6.465361e-18 3.232680e-15</span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt; 3 Gene864 cls10:trtB  0.8716965  7.992823 1.332776e-15 4.442588e-13</span></span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt; 4 Gene597  cls2:trtB  0.7638176  7.737909 1.020050e-14 2.550125e-12</span></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; 5 Gene982  cls8:trtB  0.9979503  7.288876 3.148478e-13 6.296956e-11</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; 6 Gene499  cls8:trtB -0.6079898 -5.757651 8.554122e-09 1.425687e-06</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; 7 Gene699  cls7:trtB -0.5373567 -4.919868 8.674004e-07 1.239143e-04</span></span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a><span class="co">#&gt; 8 Gene632  cls4:trtB -0.5355741 -4.810256 1.509563e-06 1.886953e-04</span></span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="co">#&gt; 9 Gene378  cls9:trtB -0.6419090 -4.427605 9.538617e-06 1.059846e-03</span></span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a><span class="do">##The true DE genes</span></span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a><span class="co">#dat$DEgenes</span></span></code></pre></div>
 </div>
 <div id="using-ml-method" class="section level3" number="2.2.5">
 <h3><span class="header-section-number">2.2.5</span> Using ML
 method</h3>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="do">##Fitting LMM by ML method</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d, <span class="at">method =</span> <span class="st">&quot;ML&quot;</span>, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#fit &lt;- lmmfit(Y, X, Z, d = d, method = &quot;ML&quot;, max.iter = max.iter, epsilon = epsilon)</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, <span class="at">method =</span> <span class="st">&quot;ML&quot;</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
 <span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
 <span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="do">##The DE genes specific to a cell-type</span></span>
 <span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values</span></span>
@@ -925,52 +928,46 @@ method</h3>
 <span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
 <span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
 <span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;       gene    cluster       coef         t            p          FDR</span></span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; 1 Gene1474  cls9:trtB  0.7522108 12.317523 7.727225e-35 7.727225e-32</span></span>
-<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; 2 Gene1621  cls3:trtB  0.7202211 10.806948 3.303671e-27 1.651835e-24</span></span>
-<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; 3 Gene1225  cls1:trtB  1.0430712  9.803126 1.117563e-22 3.725210e-20</span></span>
-<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt; 4 Gene1480  cls3:trtB  0.8160486  6.799494 1.055741e-11 2.639352e-09</span></span>
-<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; 5  Gene864 cls10:trtB  0.5329290  6.039966 1.546882e-09 3.093765e-07</span></span>
-<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; 6 Gene1723  cls7:trtB -0.6310985 -5.670709 1.425981e-08 2.376635e-06</span></span>
-<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt; 7 Gene1537  cls1:trtB -0.6764864 -5.411547 6.262584e-08 8.946549e-06</span></span>
-<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a></span>
-<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt; R version 4.4.3 (2025-02-28)</span></span>
-<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
-<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
-<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
-<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
-<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
-<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
-<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
-<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
-<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
-<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
-<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
-<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
-<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt; [1] FLASHMM_1.2.0</span></span>
-<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span id="cb10-59"><a href="#cb10-59" tabindex="-1"></a><span class="co">#&gt;  [1] Matrix_1.7-3       miniUI_0.1.1.1     jsonlite_1.9.1     compiler_4.4.3    </span></span>
-<span id="cb10-60"><a href="#cb10-60" tabindex="-1"></a><span class="co">#&gt;  [5] promises_1.3.2     Rcpp_1.0.14        callr_3.7.6        later_1.4.1       </span></span>
-<span id="cb10-61"><a href="#cb10-61" tabindex="-1"></a><span class="co">#&gt;  [9] jquerylib_0.1.4    yaml_2.3.10        fastmap_1.2.0      lattice_0.22-6    </span></span>
-<span id="cb10-62"><a href="#cb10-62" tabindex="-1"></a><span class="co">#&gt; [13] mime_0.13          R6_2.6.1           curl_6.2.1         knitr_1.50        </span></span>
-<span id="cb10-63"><a href="#cb10-63" tabindex="-1"></a><span class="co">#&gt; [17] MASS_7.3-65        htmlwidgets_1.6.4  desc_1.4.3         profvis_0.4.0     </span></span>
-<span id="cb10-64"><a href="#cb10-64" tabindex="-1"></a><span class="co">#&gt; [21] shiny_1.10.0       bslib_0.9.0        rlang_1.1.5        cachem_1.1.0      </span></span>
-<span id="cb10-65"><a href="#cb10-65" tabindex="-1"></a><span class="co">#&gt; [25] httpuv_1.6.15      xfun_0.51          fs_1.6.5           sass_0.4.9        </span></span>
-<span id="cb10-66"><a href="#cb10-66" tabindex="-1"></a><span class="co">#&gt; [29] pkgload_1.4.0      memoise_2.0.1      cli_3.6.4          magrittr_2.0.3    </span></span>
-<span id="cb10-67"><a href="#cb10-67" tabindex="-1"></a><span class="co">#&gt; [33] ps_1.9.0           grid_4.4.3         processx_3.8.6     digest_0.6.37     </span></span>
-<span id="cb10-68"><a href="#cb10-68" tabindex="-1"></a><span class="co">#&gt; [37] rstudioapi_0.17.1  xtable_1.8-4       remotes_2.5.0      devtools_2.4.5    </span></span>
-<span id="cb10-69"><a href="#cb10-69" tabindex="-1"></a><span class="co">#&gt; [41] lifecycle_1.0.4    vctrs_0.6.5        evaluate_1.0.3     glue_1.8.0        </span></span>
-<span id="cb10-70"><a href="#cb10-70" tabindex="-1"></a><span class="co">#&gt; [45] urlchecker_1.0.1   sessioninfo_1.2.3  pkgbuild_1.4.6     rmarkdown_2.29    </span></span>
-<span id="cb10-71"><a href="#cb10-71" tabindex="-1"></a><span class="co">#&gt; [49] purrr_1.0.4        tools_4.4.3        usethis_3.1.0.9000 ellipsis_0.3.2    </span></span>
-<span id="cb10-72"><a href="#cb10-72" tabindex="-1"></a><span class="co">#&gt; [53] htmltools_0.5.8.1</span></span></code></pre></div>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;      gene    cluster       coef         t            p          FDR</span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; 1 Gene456  cls4:trtB  0.6159049 10.542755 5.661896e-26 5.661896e-23</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; 2 Gene201  cls1:trtB  0.7149782  8.979640 2.762145e-19 1.381073e-16</span></span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; 3 Gene864 cls10:trtB  0.8717021  8.322877 8.691959e-17 2.897320e-14</span></span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt; 4 Gene597  cls2:trtB  0.7638143  8.058659 7.797845e-16 1.949461e-13</span></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; 5 Gene982  cls8:trtB  0.9979550  7.589598 3.236647e-14 6.473295e-12</span></span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; 6 Gene499  cls8:trtB -0.6079984 -5.993079 2.066072e-09 3.443453e-07</span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt; 7 Gene699  cls7:trtB -0.5373524 -5.121801 3.031907e-07 4.331296e-05</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt; 8 Gene632  cls4:trtB -0.5355670 -5.009191 5.475210e-07 6.844013e-05</span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt; 9 Gene378  cls9:trtB -0.6419070 -4.612034 3.992413e-06 4.436014e-04</span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt; R version 4.4.3 (2025-02-28)</span></span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt; [1] FLASHMM_1.2.1</span></span>
+<span id="cb10-59"><a href="#cb10-59" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-60"><a href="#cb10-60" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb10-61"><a href="#cb10-61" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.37     R6_2.6.1          fastmap_1.2.0     Matrix_1.7-3     </span></span>
+<span id="cb10-62"><a href="#cb10-62" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.51         lattice_0.22-6    cachem_1.1.0      knitr_1.50       </span></span>
+<span id="cb10-63"><a href="#cb10-63" tabindex="-1"></a><span class="co">#&gt;  [9] htmltools_0.5.8.1 rmarkdown_2.29    lifecycle_1.0.4   cli_3.6.4        </span></span>
+<span id="cb10-64"><a href="#cb10-64" tabindex="-1"></a><span class="co">#&gt; [13] grid_4.4.3        sass_0.4.9        jquerylib_0.1.4   compiler_4.4.3   </span></span>
+<span id="cb10-65"><a href="#cb10-65" tabindex="-1"></a><span class="co">#&gt; [17] rstudioapi_0.17.1 tools_4.4.3       evaluate_1.0.3    bslib_0.9.0      </span></span>
+<span id="cb10-66"><a href="#cb10-66" tabindex="-1"></a><span class="co">#&gt; [21] yaml_2.3.10       rlang_1.1.5       jsonlite_1.9.1    MASS_7.3-65</span></span></code></pre></div>
 </div>
 </div>
 </div>
