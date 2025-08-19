@@ -12,7 +12,7 @@
 
 <meta name="author" content="Changjiang Xu, Delaram Pouyabahar, Veronique Voisin, and Gary D. Bader" />
 
-<meta name="date" content="2025-04-09" />
+<meta name="date" content="2025-08-18" />
 
 <title>Single-cell differential expression analysis with FLASHMM</title>
 
@@ -375,7 +375,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 analysis with FLASHMM</h1>
 <h4 class="author">Changjiang Xu, Delaram Pouyabahar, Veronique Voisin,
 and Gary D. Bader</h4>
-<h4 class="date">April 09, 2025</h4>
+<h4 class="date">August 18, 2025</h4>
 <div class="abstract">
 <p class="abstract">Abstract</p>
 FLASHMM is a package for single-cell differential expression analysis
@@ -394,30 +394,32 @@ use of the package through an example.
 
 <div id="TOC">
 <ul>
-<li><a href="#methods" id="toc-methods"><span class="toc-section-number">1</span> Methods</a>
+<li><a href="#flashmm" id="toc-flashmm"><span class="toc-section-number">1</span> FLASHMM</a>
 <ul>
-<li><a href="#lmm-parameter-estimation-and-hypothesis-testing" id="toc-lmm-parameter-estimation-and-hypothesis-testing"><span class="toc-section-number">1.1</span> LMM parameter estimation and
-hypothesis testing</a></li>
-<li><a href="#fast-and-scalable-algorithm" id="toc-fast-and-scalable-algorithm"><span class="toc-section-number">1.2</span> Fast and scalable
+<li><a href="#linear-mixed-effects-model" id="toc-linear-mixed-effects-model"><span class="toc-section-number">1.1</span> Linear mixed-effects
+model</a></li>
+<li><a href="#the-fast-and-scalable-algorithm" id="toc-the-fast-and-scalable-algorithm"><span class="toc-section-number">1.2</span> The fast and scalable
 algorithm</a></li>
-<li><a href="#flashmm" id="toc-flashmm"><span class="toc-section-number">1.3</span> FLASHMM</a></li>
+<li><a href="#functions" id="toc-functions"><span class="toc-section-number">1.3</span> Functions</a></li>
 </ul></li>
 <li><a href="#example" id="toc-example"><span class="toc-section-number">2</span> Example</a>
 <ul>
-<li><a href="#simulating-the-scrna-seq-data" id="toc-simulating-the-scrna-seq-data"><span class="toc-section-number">2.1</span> Simulating the scRNA-seq
-data</a></li>
-<li><a href="#analyzing-the-simulated-scrna-seq-data" id="toc-analyzing-the-simulated-scrna-seq-data"><span class="toc-section-number">2.2</span> Analyzing the simulated scRNA-seq
-data</a>
+<li><a href="#simulating-scrna-seq-data" id="toc-simulating-scrna-seq-data"><span class="toc-section-number">2.1</span> Simulating scRNA-seq data</a></li>
+<li><a href="#de-analysis-of-scrna-seq-data" id="toc-de-analysis-of-scrna-seq-data"><span class="toc-section-number">2.2</span> DE analysis of scRNA-seq data</a>
 <ul>
 <li><a href="#lmm-design" id="toc-lmm-design"><span class="toc-section-number">2.2.1</span> LMM design</a></li>
 <li><a href="#lmm-fitting" id="toc-lmm-fitting"><span class="toc-section-number">2.2.2</span> LMM fitting</a></li>
 <li><a href="#hypothesis-testing" id="toc-hypothesis-testing"><span class="toc-section-number">2.2.3</span> Hypothesis testing</a></li>
-<li><a href="#exploring-lmm-fit-and-the-de-genes" id="toc-exploring-lmm-fit-and-the-de-genes"><span class="toc-section-number">2.2.4</span> Exploring LMM fit and the DE
-genes</a></li>
-<li><a href="#using-ml-method" id="toc-using-ml-method"><span class="toc-section-number">2.2.5</span> Using ML method</a></li>
+<li><a href="#using-ml-method" id="toc-using-ml-method"><span class="toc-section-number">2.2.4</span> Using ML method</a></li>
 </ul></li>
 </ul></li>
-<li><a href="#remarks" id="toc-remarks"><span class="toc-section-number">3</span> Remarks</a></li>
+<li><a href="#methods" id="toc-methods"><span class="toc-section-number">3</span> Methods</a>
+<ul>
+<li><a href="#lmm-parameter-estimation" id="toc-lmm-parameter-estimation"><span class="toc-section-number">3.1</span> LMM parameter estimation</a></li>
+<li><a href="#hypothesis-testing-1" id="toc-hypothesis-testing-1"><span class="toc-section-number">3.2</span> Hypothesis testing</a></li>
+</ul></li>
+<li><a href="#remarks" id="toc-remarks"><span class="toc-section-number">4</span> Remarks</a></li>
+<li><a href="#session-info" id="toc-session-info">Session info</a></li>
 <li><a href="#references" id="toc-references">References</a></li>
 </ul>
 </div>
@@ -429,11 +431,11 @@ MathJax = {
   }
 };
 </script>
-<div id="methods" class="section level1" number="1">
-<h1><span class="header-section-number">1</span> Methods</h1>
-<div id="lmm-parameter-estimation-and-hypothesis-testing" class="section level2" number="1.1">
-<h2><span class="header-section-number">1.1</span> LMM parameter
-estimation and hypothesis testing</h2>
+<div id="flashmm" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> FLASHMM</h1>
+<div id="linear-mixed-effects-model" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Linear mixed-effects
+model</h2>
 <p>Consider the linear mixed-effects model (LMM) as expressed below
 <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and
 McCulloch 2006</a>)</span> <span class="math display">\[\begin{equation}\label{eq:lmm}
@@ -442,8 +444,9 @@ y = X\beta + Zb + \epsilon,
 an <span class="math inline">\(n\times 1\)</span> vector of observed
 responses, <span class="math inline">\(X\)</span> is an <span class="math inline">\(n\times p\)</span> design matrix for fixed effects
 <span class="math inline">\(\beta\)</span>, <span class="math inline">\(Z\)</span> is an <span class="math inline">\(n\times q\)</span> design matrix for random
-effects <span class="math inline">\(b\)</span>, and <span class="math inline">\(\epsilon\)</span> is an <span class="math inline">\(n\times 1\)</span> vector of residual errors. The
-term of random effects may be a combination of various components, <span class="math display">\[
+effects <span class="math inline">\(b\)</span>, and <span class="math inline">\(\epsilon\)</span> is a vector of residual errors.
+The term of random effects may be a combination of various components,
+<span class="math display">\[
 Zb = Z_1 b_1 + \cdots + Z_K b_K,
 \]</span> where <span class="math inline">\(Z=[Z_1,\ldots,Z_K]\)</span>,
 <span class="math inline">\(b=[b^T_1,\ldots,b^T_K]^T\)</span>, <span class="math inline">\(K\)</span> is the number of random-effect
@@ -463,87 +466,24 @@ N(\mathbf{0}, \sigma^2I_n).\]</span></li>
 matrix of zero elements, <span class="math inline">\(I_n\)</span> is an
 <span class="math inline">\(n\times n\)</span> identity matrix, and
 <span class="math inline">\(\sigma^2_k\)</span> and <span class="math inline">\(\sigma^2\)</span> are unknown parameters, called
-variance components.</p>
+variance components. Assumption (1) implies <span class="math inline">\(p &lt; n\)</span>. We also assume <span class="math inline">\(q_k &lt; n\)</span>. If <span class="math inline">\(q_k\geq n\)</span>, we can use principal component
+analysis (PCA) to obtain an equivalent LMM with the number of random
+effects less than <span class="math inline">\(n\)</span>.</p>
+</div>
+<div id="the-fast-and-scalable-algorithm" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> The fast and scalable
+algorithm</h2>
 <p><span class="citation">Hartley and Rao (<a href="#ref-HartleyRao1967">1967</a>)</span> developed the maximum
 likelihood (ML) method for estimating the LMM parameters (fixed effects
 and variance components). <span class="citation">Patterson and Thompson
 (<a href="#ref-PattersonThompson1971">1971</a>)</span> proposed a
-modified maximum likelihood procedure which partitions the data into two
-mutually uncorrelated parts, one being free of the fixed effects used
-for estimating variance components, called restricted maximum likelihood
-(REML) method. The REML estimator is unbiased. The ML estimator of
-variance components is biased in general. With variance components,
-<span class="math inline">\(\theta\)</span>, estimated, the fixed
-effects estimated by either ML or REML are given as follows <span class="math display">\[
-\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
-\]</span> with covariance matrix <span class="math display">\[var(\hat\beta) =
-(X^TV_{\theta}^{-1}X)^{-1},\]</span> where <span class="math inline">\(\theta = (\theta_0, \theta_1,\ldots,
-\theta_K)\)</span>, <span class="math inline">\(\theta_0 =
-\sigma^2\)</span>, <span class="math inline">\(\theta_k =
-\sigma^2_k\)</span>, and <span class="math display">\[V_{\theta} =
-\theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K
-Z_KZ_K^T.\]</span></p>
-<p>Estimating the variance components by either ML or REML is a
-numerical optimization problem. Various iterative methods based on the
-log likelihood, called gradient methods, have been proposed <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and
-McCulloch 2006</a>)</span>. The gradient methods are represented by the
-iteration equation <span class="math display">\[\begin{equation}\label{eq:gradient}
-\theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial
-l(\theta^{(i)})}{\partial\theta},
-\end{equation}\]</span> where <span class="math inline">\(\partial
-l(\theta)/\partial\theta\)</span> is the gradient of the log likelihood
-function, and <span class="math inline">\(\Gamma(\theta)\)</span> is a
-modifier matrix of the gradient direction, which can be specified by
-Newton–Raphson, Fisher scoring or average information. The
-Newton-Raphson method uses the inverse Hessian matrix as a modifier,
-while the Fisher scoring method uses the inverse of the expectation of
-the Hessian matrix. The average information method uses the inverse of
-the average Hessian matrix and its expectation. We use the Fisher
-scoring method. The Fisher scoring method is more stable than others
-because the Hessian matrix may not be positive definite but its
-expectation is positive definite.</p>
-<p>The hypotheses for testing fixed effects and variance components can
-be respectively defined as <span class="math display">\[
-H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
-\]</span> <span class="math display">\[
-H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k &gt; 0,
-\]</span> where <span class="math inline">\(\theta_k\)</span>, <span class="math inline">\(k=1, \ldots, K\)</span>, represent the parameters
-of variance components <span class="math inline">\(\sigma^2_k\)</span>
-but are allowed to be negative. The lower boundary of the parameters,
-<span class="math inline">\(\theta\)</span>, can be the negative value
-such that the variance-covariance matrix, <span class="math inline">\(V_{\theta}\)</span>, remains definable (positive
-definite). The negative lower boundary exists and can be less than <span class="math inline">\(- \sigma^2/\lambda_{max}\)</span>, where <span class="math inline">\(\lambda_{max} &gt; 0\)</span> is the largest
-singular value of <span class="math inline">\(ZZ^T\)</span>. If <span class="math inline">\(\theta_k &gt; 0\)</span>, then <span class="math inline">\(\sigma_k^2 = \theta_k\)</span> is definable and
-the mixed model is well-specified. Otherwise, if <span class="math inline">\(\theta_k \le 0\)</span>, the mixed model is
-miss-specified and the <span class="math inline">\(k\)</span>-th
-random-effect component shouldn’t be included.</p>
-<p>Allowing the parameters of variance components to take negative value
-avoids the zero boundary at the null hypothesis for the variance
-components. Consequently, the asymptotic normality of the maximum
-likelihood estimation at the null hypothesis holds under regularity
-conditions, which enables us to use z-statistics or t-statistics for
-hypothesis testing of the fixed effects and variance components. The
-t-statistics for fixed effects are given by <span class="math display">\[\begin{equation}
-\label{eq:tcoef}
-T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} =
-\frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
-\end{equation}\]</span> The t-statistic for a contrast, a linear
-combination of the estimated fixed effects, <span class="math inline">\(c^T\hat\beta\)</span>, is <span class="math display">\[\begin{equation}
-\label{eq:tcontrast}
-T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
-\end{equation}\]</span> The test statistics for the parameters of
-variance components are given by <span class="math display">\[\begin{equation}
-\label{eq:zvarcomp}
-T_{\theta_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}}
-\sim N(0, 1),
-\end{equation}\]</span> where <span class="math inline">\(I(\theta)\)</span> is the Fisher information
-matrix.</p>
-</div>
-<div id="fast-and-scalable-algorithm" class="section level2" number="1.2">
-<h2><span class="header-section-number">1.2</span> Fast and scalable
-algorithm</h2>
-<p>We developed a summary statistics based algorithm for implementing
-the gradient method <span class="math inline">\(\eqref{eq:gradient}\)</span>. Let <span class="math inline">\(XX\)</span>, <span class="math inline">\(XY\)</span>, <span class="math inline">\(ZX\)</span>, <span class="math inline">\(ZY\)</span>, and <span class="math inline">\(ZZ\)</span> denote a matrix, respectively, which
+modified maximum likelihood procedure, called restricted maximum
+likelihood (REML) method. Estimating the variance components by either
+ML or REML is a numerical optimization problem. The log-likelihood based
+gradient methods have been proposed <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and McCulloch
+2006</a>)</span>.</p>
+<p>We developed a fast and scalable algorithm for implementing the
+gradient methods based on summary statistics. Let <span class="math inline">\(XX\)</span>, <span class="math inline">\(XY\)</span>, <span class="math inline">\(ZX\)</span>, <span class="math inline">\(ZY\)</span>, and <span class="math inline">\(ZZ\)</span> denote a matrix, respectively, which
 define the summary statistics that are computed from cell-level data
 <span class="math inline">\(X\)</span>, <span class="math inline">\(Y\)</span> and <span class="math inline">\(Z\)</span> as follows: <span class="math display">\[\begin{equation}
 \label{eq:sdata}
@@ -556,24 +496,25 @@ Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \ldots, y_m^T]^T\)</span> is a <span class="math inline">\(m\)</span>-by-<span class="math inline">\(n\)</span> matrix of gene expression profile with
 each row <span class="math inline">\(y_i\)</span> corresponding to the
 expression of gene <span class="math inline">\(i\)</span>, <span class="math inline">\(i=1,\ldots,m\)</span>, <span class="math inline">\(m\)</span> is the number of genes and <span class="math inline">\(n\)</span> is the number of cells (sample size).
-The summary statistics can be precomputed and stored. The summary
-statistics based algorithm has a complexity of <span class="math inline">\(O(m(p^3 + q^3))\)</span>, which doesn’t depend on
-number of cells (sample size <span class="math inline">\(n\)</span>). In
-single-cell differential expression (DE) analysis, the numbers of fixed
-and random effects, <span class="math inline">\(p\)</span> and <span class="math inline">\(q\)</span>, are relatively small. Therefore, the
-algorithm is fast and scalable, and requires less computer memory.</p>
+After the summary statistics are precomputed, the summary statistics
+based algorithm has a complexity of <span class="math inline">\(O(m(p^3
++ q^3))\)</span>, which doesn’t depend on the number of cells (sample
+size <span class="math inline">\(n\)</span>). In single-cell
+differential expression (DE) analysis, the numbers of fixed and random
+effects, <span class="math inline">\(p\)</span> and <span class="math inline">\(q\)</span>, are relatively small. Therefore, the
+algorithm is fast and scalable, and requires less computer memory. See
+the Supplementary Material in <span class="citation">Xu et al. (<a href="#ref-Xu2025">2025</a>)</span> for details.</p>
 </div>
-<div id="flashmm" class="section level2" number="1.3">
-<h2><span class="header-section-number">1.3</span> FLASHMM</h2>
-<p>FLASHMM package provides two functions, <em>lmm</em> and
-<em>lmmfit</em>, for fitting LMM. The <em>lmm</em> function uses summary
-statistics as arguments. The <em>lmmfit</em> function is a wrapper
-function of <em>lmm</em>, which directly uses cell-level data and
-computes the summary statistics inside the function. The <em>lmmfit</em>
-function is simple to be operated but it has a limitation of memory use.
-For extremely large scale data, we can precompute the summary-level data
-by <span class="math inline">\(\eqref{eq:sdata}\)</span>, and then use
-<em>lmm</em> function to fit LMM. FLASHMM provides <em>lmmtest</em>
+<div id="functions" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> Functions</h2>
+<p>The FLASHMM package provides two functions for fitting LMMs:
+<em>lmm</em> and <em>lmmfit</em>. The <em>lmm</em> function takes
+summary statistics as input, whereas <em>lmmfit</em> is a wrapper around
+<em>lmm</em> that directly processes cell-level data and computes the
+summary statistics internally. While <em>lmmfit</em> is easier to use,
+it has the limitation of higher memory consumption. For extremely large
+scale data, we can precompute the summary-level data by <span class="math inline">\(\eqref{eq:sdata}\)</span>, and then use
+<em>lmm</em> function to fit LMMs. FLASHMM provides <em>lmmtest</em>
 function to perform statistical test on the fixed effects and the
 contrasts of the fixed effects.</p>
 <p>In summary, FLASHMM package provides the following main
@@ -583,18 +524,17 @@ functions.</p>
 <li><em>lmmfit</em>: fit LMM using cell-level data.</li>
 <li><em>lmmtest</em>: perform statistical tests on the fixed effects and
 their contrasts.</li>
-<li><em>contrast.matrix</em>: construct contrast matrix combining the
-fixed effects for various comparisons.</li>
+<li><em>contrast.matrix</em>: construct a contrast matrix of the fixed
+effects for various comparisons.</li>
 <li><em>simuRNAseq</em>: simulate multi-sample multi-cell-type scRNA-seq
-dataset based on a negative binomial distribution.</li>
+data.</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="do">##Install FLASHMM from CRAN.</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># install.packages(&quot;FLASHMM&quot;)</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="do">##Install FLASHMM from Github.</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># devtools::install_github(&quot;https://github.com/Baderlab/FLASHMM&quot;)</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="do">##Load the package.</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">library</span>(FLASHMM)</span></code></pre></div>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="do">##Load the package.</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">library</span>(FLASHMM)</span></code></pre></div>
 </div>
 </div>
 <div id="example" class="section level1" number="2">
@@ -603,381 +543,628 @@ dataset based on a negative binomial distribution.</li>
 (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform
 single-cell differential expression analysis. In this example, we are
 interested in identifying the genes differentially expressed between two
-treatments (conditions) within a cell type.</p>
-<div id="simulating-the-scrna-seq-data" class="section level2" number="2.1">
-<h2><span class="header-section-number">2.1</span> Simulating the
-scRNA-seq data</h2>
+treatments (conditions) within a cell type using a linear mixed-effects
+model (LMM).</p>
+<div id="simulating-scrna-seq-data" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Simulating scRNA-seq
+data</h2>
 <p>We simulate the multi-sample multi-cell-type scRNA-seq data by
-simuRNAseq function in FLASHMM package. The simuRNAseq function can
-generate scRNA-seq data, with or without a reference dataset. The
-reference dataset contains count data and metadata. The count data is a
-genes-by-cells matrix. The metadata must be a data frame containing
+<em>simuRNAseq</em> function in FLASHMM package. The <em>simuRNAseq</em>
+function generates scRNA-seq data with or without a reference dataset.
+The reference dataset consists of count data and metadata. The count
+data is a genes-by-cells matrix. The metadata is a data frame containing
 three columns: samples (subjects), cell-types (clusters), and treatments
 (experimental conditions), and the three columns must be named ‘sam’,
 ‘cls’, and ‘trt’, respectively.</p>
+<p>The simulated expression count is generated by the negative binomial
+(NB) distribution with dispersion <span class="math inline">\(\phi_g\)</span> and mean <span class="math inline">\(\mu_{g,ijk}\)</span>, <span class="math display">\[\begin{equation}\label{nbinomsimu}
+y_{g, ijk}\sim NB(\mu_{g,ijk}, \phi_g),
+\end{equation}\]</span> <span class="math display">\[\log(\mu_{g,ijk}) =
+\log(\mu_g) + \alpha_{ijk} + \beta_{g, ij} + b_{g,k},\]</span> where
+<span class="math inline">\(y_{g, ijk}\)</span> be the count for gene
+<span class="math inline">\(g\)</span> and the cell from subject <span class="math inline">\(k = 1,\ldots, n_s\)</span> and cell-type <span class="math inline">\(j = 1, \ldots, n_c\)</span> with treatment <span class="math inline">\(i=1,2\)</span>. <span class="math inline">\(\phi_g\)</span> and <span class="math inline">\(\mu_g\)</span> are the dispersion and mean
+estimated from the reference data for gene <span class="math inline">\(g\)</span>, <span class="math inline">\(\alpha_{ijk}\)</span> is a centered
+log-library-size for the cell <span class="math inline">\(c_{ijk}\)</span>, <span class="math inline">\(\beta_{g,ij}\)</span> represents the effect of
+treatment <span class="math inline">\(i\)</span> specific to cell-type
+<span class="math inline">\(j\)</span>, <span class="math inline">\(b_{g,k} \sim N(0, \sigma^2_b)\)</span> is a random
+effect of subject variation. For the non-DE genes, <span class="math inline">\(\beta_{g,1j}=\beta_{g,2j}=0\)</span>. For the DE
+genes, <span class="math inline">\(\beta_{g,1j} = 0\)</span> and <span class="math inline">\(\beta_{g, 2j}\sim \pm Uniform(a_1, a_2)\)</span>,
+a uniform distribution with <span class="math inline">\(a_1a_2&gt;0\)</span>, where <span class="math inline">\(a_1\)</span> and <span class="math inline">\(a_2\)</span> are the lower and upper bounds of the
+DE gene effect sizes. See the Supplementary Material in <span class="citation">Xu et al. (<a href="#ref-Xu2025">2025</a>)</span> for
+details.</p>
 <p>For simplicity and demonstration purposes, we use a simulated
 reference dataset to generate the scRNA-seq data. First we simulate the
 reference dataset.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="do">##Generate a reference dataset by simuRNAseq function.</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2502</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>refdata <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">1000</span>, <span class="at">nCells =</span> <span class="dv">10000</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="do">##counts</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>counts <span class="ot">&lt;-</span> refdata<span class="sc">$</span>counts</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="do">##metadata</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> refdata<span class="sc">$</span>metadata</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="fu">head</span>(metadata)</span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;       sam cls trt libsize</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; Cell1  A5   9   A    1941</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; Cell2  A9   9   A    1951</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Cell3  A3   8   A    2005</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; Cell4  A6   3   A    1906</span></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; Cell5  B8   5   B    1913</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; Cell6 A11   4   A    1985</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="fu">rm</span>(refdata)</span></code></pre></div>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>refdata <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(<span class="at">nGenes =</span> <span class="dv">100</span>, <span class="at">nCells =</span> <span class="dv">10000</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>counts <span class="ot">&lt;-</span> refdata<span class="sc">$</span>counts <span class="co">#counts</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> refdata<span class="sc">$</span>metadata <span class="co">#metadata</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">head</span>(metadata)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;       sam cls trt libsize</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; Cell1  B5   1   B     197</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; Cell2  A3   1   A     182</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; Cell3  A5   9   A     196</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; Cell4  B1   4   B     200</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; Cell5  B5   1   B     169</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Cell6  A7   1   A     216</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="fu">rm</span>(refdata)</span></code></pre></div>
 <p>For the simulated reference dataset, we don’t need to change the
 metadata column names because the columns of samples, clusters, and
-treatments, are already named ‘sam’, ‘cls’, and ‘trt’, respectively.
-But, for a real biological reference dataset, we need to change the
-metadata column names.</p>
+treatments, are already named ‘sam’, ‘cls’, and ‘trt’, respectively. For
+a real biological reference dataset, the column names of the metadata
+should be correspondingly changed as ‘sam’, ‘cls’ and ‘trt’.</p>
 <p>Next we use the reference counts and metadata to simulate scRNA-seq
 data that contains 100 genes and 100,000 cells from 25 samples
-(subjects) and 10 clusters (cell-types) with 2 treatments. There are 10
-differentially expressed genes.</p>
+(subjects) and 10 clusters (cell-types) with 2 treatments. There are
+totally 10 DE genes specific to a cell-type.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="do">##Generate the scRNA-seq data by simuRNAseq function.</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2503</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(counts, <span class="at">metadata =</span> metadata, <span class="at">nGenes =</span> <span class="dv">100</span>, <span class="at">nCells =</span> <span class="dv">100000</span>, <span class="at">nsam =</span> <span class="dv">25</span>, </span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>       <span class="at">ncls =</span> <span class="dv">10</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">10</span>, <span class="at">minbeta =</span> <span class="fl">0.5</span>, <span class="at">maxbeta =</span> <span class="dv">1</span>, <span class="at">var.randomeffects =</span> <span class="fl">0.1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">simuRNAseq</span>(counts, <span class="at">metadata =</span> metadata, <span class="at">nGenes =</span> <span class="dv">100</span>, <span class="at">nCells =</span> <span class="dv">100000</span>, </span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>       <span class="at">nsam =</span> <span class="dv">25</span>, <span class="at">ncls =</span> <span class="dv">10</span>, <span class="at">ntrt =</span> <span class="dv">2</span>, <span class="at">nDEgenes =</span> <span class="dv">10</span>)</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">str</span>(dat)</span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; List of 5</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 1000 obs. of  2 variables:</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:1000] 3.19 3.56 1.02 4.24 2.11 ...</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:1000] 0.814 1.476 0.791 0.829 2.319 ...</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  $ ref.mean.dispersion:&#39;data.frame&#39;: 100 obs. of  2 variables:</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;   ..$ mu        : num [1:100] 3.12 2.97 1.11 4.19 1.87 ...</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;   ..$ dispersion: num [1:100] 0.766 0.836 1.602 2.37 1.855 ...</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;  $ metadata           :&#39;data.frame&#39;: 100000 obs. of  4 variables:</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : chr [1:100000] &quot;B10&quot; &quot;A2&quot; &quot;A10&quot; &quot;A3&quot; ...</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : chr [1:100000] &quot;8&quot; &quot;6&quot; &quot;3&quot; &quot;1&quot; ...</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : chr [1:100000] &quot;B&quot; &quot;A&quot; &quot;A&quot; &quot;A&quot; ...</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:100000] 2292 2108 2176 1938 2183 ...</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:100000] 0 2 3 0 1 0 1 0 7 4 ...</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;   ..$ sam    : chr [1:100000] &quot;A13&quot; &quot;B6&quot; &quot;A9&quot; &quot;B9&quot; ...</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;   ..$ cls    : chr [1:100000] &quot;2&quot; &quot;8&quot; &quot;3&quot; &quot;4&quot; ...</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;   ..$ trt    : chr [1:100000] &quot;A&quot; &quot;B&quot; &quot;A&quot; &quot;B&quot; ...</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;   ..$ libsize: num [1:100000] 177 238 145 170 209 193 143 172 227 187 ...</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  $ counts             : num [1:100, 1:100000] 5 4 0 2 3 9 0 0 0 1 ...</span></span>
 <span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene260&quot; &quot;Gene724&quot; &quot;Gene774&quot; &quot;Gene616&quot; ...</span></span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100000] &quot;Cell9224&quot; &quot;Cell3950&quot; &quot;Cell530&quot; &quot;Cell2039&quot; ...</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100000] &quot;Cell9476&quot; &quot;Cell774&quot; &quot;Cell5736&quot; &quot;Cell6735&quot; ...</span></span>
 <span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt;  $ DEgenes            :&#39;data.frame&#39;: 10 obs. of  3 variables:</span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;Gene201&quot; &quot;Gene864&quot; &quot;Gene522&quot; &quot;Gene597&quot; ...</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] 0.977 0.819 -0.532 0.896 0.887 ...</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;1&quot; &quot;10&quot; &quot;2&quot; &quot;2&quot; ...</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;   ..$ gene   : chr [1:10] &quot;Gene91&quot; &quot;Gene92&quot; &quot;Gene93&quot; &quot;Gene94&quot; ...</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   ..$ beta   : num [1:10] 0.649 -0.87 -0.752 0.849 -0.499 ...</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   ..$ cluster: chr [1:10] &quot;1&quot; &quot;10&quot; &quot;10&quot; &quot;2&quot; ...</span></span>
 <span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;  $ treatment          : chr &quot;B&quot;</span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="fu">rm</span>(counts, metadata)</span></code></pre></div>
-<p>The simulated data contains a genes-by-cells matrix of expression
-counts and a data frame of metadata consisting of 3 columns: samples
-(sam), cell-types (cls) and treatments (trt).</p>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="do">##Samples (subjects) nested in one treatment A or B</span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#table(dat$metadata$sam)</span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#table(dat$metadata$trt)</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">grep</span>(<span class="st">&quot;A&quot;</span>, dat<span class="sc">$</span>metadata<span class="sc">$</span>sam) <span class="sc">%in%</span> <span class="fu">which</span>(dat<span class="sc">$</span>metadata<span class="sc">$</span>trt <span class="sc">==</span> <span class="st">&quot;A&quot;</span>))</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">grep</span>(<span class="st">&quot;B&quot;</span>, dat<span class="sc">$</span>metadata<span class="sc">$</span>sam) <span class="sc">%in%</span> <span class="fu">which</span>(dat<span class="sc">$</span>metadata<span class="sc">$</span>trt <span class="sc">==</span> <span class="st">&quot;B&quot;</span>))</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="fu">rm</span>(counts, metadata) <span class="co">#releasing memory</span></span></code></pre></div>
+<p>The simulated data contains</p>
+<ul>
+<li><em>counts</em>: a genes-by-cells matrix of expression counts</li>
+<li><em>metadata</em>: a data frame consisting of samples (sam),
+cell-types (cls) and treatments (trt).</li>
+<li><em>DEgenes</em>: differentially expressed (DE) genes.</li>
+</ul>
 </div>
-<div id="analyzing-the-simulated-scrna-seq-data" class="section level2" number="2.2">
-<h2><span class="header-section-number">2.2</span> Analyzing the
-simulated scRNA-seq data</h2>
-<p>We perform differential expression analysis of the simulated dataset
-using FLASHMM package. We are to identify the significantly
-differentially expressed genes between two treatments in a cell-type.
-The analyses involve following steps: LMM design, LMM fitting and
-hypothesis testing, exploring LMM fit and the differetially expressed
-(DE) genes.</p>
-<p><strong>LMM design</strong>: construct design matrices for fixed and
-random effects described as <span class="math inline">\(\eqref{eq:lmm}\)</span>, and compute the gene
-expression profile. The gene expression is taken as log-transformed
-count matrix, <span class="math display">\[Y =
-\log(1+\text{counts}),\]</span> in which each row corresponds to the
-expression profile for a gene. The design matrix for the fixed effects
-can be created by the function model.matrix, as follows <span class="math display">\[
-X = model.matrix(\sim 0 + log(library.size) + cell.type +
-cell.type:treatment),
-\]</span> where the interaction term <span class="math inline">\(cell.type:treatment\)</span> represents the
-treatment effect in a specific cell-type. <span class="math inline">\(library.size\)</span> is a normalization factor of
-the scRNA-seq counts, calculated by the total sum of counts across all
-genes for each cell. We consider the subjects (samples) as random
-effects that reflect the intra-subject correlation and inter-subject
-variability. The design matrix for the random effects is given by <span class="math display">\[
-Z = model.matrix(\sim 0 + subject).
-\]</span></p>
-<p><strong>LMM fitting and hypothesis testing</strong>: We use either
-lmm or lmmfit function to fit LMMs for all genes. With the cell-level
-data matrices <span class="math inline">\(Y\)</span>, <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span>, the LMMs can be fit by <span class="math display">\[lmmfit(Y, X, Z, d = d),\]</span> where <span class="math inline">\(d\)</span> is a vector of the numbers of
-random-effects in different components. For <span class="math inline">\(K\)</span> components of random-effects, <span class="math inline">\(d = (q_1, \ldots, q_K)\)</span>, where <span class="math inline">\(q_k\)</span> is the number of columns of the
-design matrix <span class="math inline">\(Z_k\)</span> for the <span class="math inline">\(k\)</span>-th random-effect component. For a
-large-scale data, the lmmfit function has a problem of computer memory
-limit. In this case, it is recommended to pre-compute and store the
-summary-level data: <span class="math inline">\(XX\)</span>, <span class="math inline">\(XY\)</span>, <span class="math inline">\(ZX\)</span>, <span class="math inline">\(ZY\)</span>, <span class="math inline">\(ZZ\)</span>, and <span class="math inline">\(Y_{norm}\)</span>, defined in <span class="math inline">\(\eqref{eq:sdata}\)</span>, and then use the lmm
-function to fit the LMMs as follows: <span class="math display">\[lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d =
-d).\]</span> The summary-level data doesn’t depend on the sample size
-<span class="math inline">\(n\)</span>. This makes lmm memory-efficient.
-The default method in the lmm and lmmfit functions is restricted maximum
-likelihood (REML), that is, method = ‘REML’. If you use the maximum
-likelihood (ML) method to fit the LMM, set method = ‘ML’ in the lmm and
-lmmfit functions.</p>
-<p>In addition, the lmm and lmmfit functions perform hypothesis testing
-on the fixed effects (coefficients). We can also use the lmmtest
-function to conduct statistical tests on both the fixed effects and
-their contrasts for various comparisons between different levels.</p>
-<p>LMM fitting returns a list of estimates of LMM parameters
-(coefficients and variance components), standard errors of the
-estimates, covariance matrix of the coefficients (fixed effects), and
-t-values and p-values for the hypothesis testing on the coefficients,
-for each gene. The LMM fitting also returns the number of iterations,
-the first partial derivatives of the log likelihood, and the
-log-likelihood at the termination of the iterations for each gene.</p>
-<p><strong>Exploring LMM fit and DE genes</strong>: We check if the LMM
-fitting is convergent, and perform hypothesis testing on the variance
-components of random effects. Then we identify DE genes based on
-hypothesis testing p-values for the coefficients (fixed effects). If the
-absolute first partial derivatives of log likelihood are all less than
-the convergence tolerance, the LMM fitting converges, otherwise it
-doesn’t converge. The genes for which LMM fitting doesn’t converge
-should be excluded in the subsequent analysis because the estimated
-coefficients for these genes are not reliable. DE genes can be
-identified by adjusting p-values using the false discovery rate (FDR) or
-family-wise error rate (Bonferroni correction). Additionally, we may
-exclude genes with small coefficients (effect size or log-fold
-change).</p>
+<div id="de-analysis-of-scrna-seq-data" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> DE analysis of
+scRNA-seq data</h2>
+<p>We perform differential expression (DE) analysis of the simulated
+data using FLASHMM package. We are to identify the significantly
+differentially expressed genes between two treatments in a cell-type
+based on the LMM. The gene expression profile is taken as
+log-transformed count matrix, <span class="math display">\[\begin{equation}\label{exprs}
+Y = \log(1+\text{counts}),
+\end{equation}\]</span> in which each row represents the expression
+profile for a gene. The analyses involve following steps: LMM design,
+LMM fitting, and hypothesis testing.</p>
 <div id="lmm-design" class="section level3" number="2.2.1">
 <h3><span class="header-section-number">2.2.1</span> LMM design</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="do">##Gene expression matrix, Y = log2(1 + counts)</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">log2</span>(<span class="dv">1</span> <span class="sc">+</span> dat<span class="sc">$</span>counts)</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>dat<span class="sc">$</span>counts <span class="ot">&lt;-</span> <span class="cn">NULL</span> <span class="co">#Remove the counts.</span></span>
+<p>LMM provides a framework to represent the single-cell gene expression
+profile by incorporating fixed effects, which capture systematic
+differences across experimental conditions, and random effects, which
+model the correlations within subjects and the variations between
+subjects. Constructing design matrices for fixed and random effects is
+an important step in LMM-based DE analysis.</p>
+<p><strong>Design matrix for fixed effects</strong>: As a general linear
+model design, the fixed effect design matrix can be created by
+model.matrix function as follows <span class="math display">\[\begin{equation}\label{fixedeff}
+X = model.matrix(\sim 0 + log(library.size) + covariates + cell.type +
+cell.type:treatment),
+\end{equation}\]</span> where</p>
+<ul>
+<li><span class="math inline">\(library.size\)</span>, the total sum of
+counts across genes, is recommended including as a role of the
+normalization factor of the scRNA-seq counts.</li>
+<li><span class="math inline">\(covariates\)</span>, e.g., age, gender,
+batch effects, or principal components, can be included as fixed effects
+to adjust for unwanted variability, if appropriate.</li>
+<li><span class="math inline">\(cell.type\)</span> is used to adjust the
+cell-type effect.</li>
+<li><span class="math inline">\(cell.type:treatment\)</span> represents
+the treatment effect in a specific cell-type.</li>
+</ul>
+<p><strong>Design matrix for random effects</strong>: In multi-subject
+single-cell studies, cells are nested within subjects, and subjects are
+often nested within experimental conditions, meaning that cells from the
+same subject are correlated, and subjects within the same condition
+share common sources of variation. To account for this hierarchical
+structure, the mixed models treat the subjects (samples) as random
+effects, efficiently capturing both within-subject correlation and
+between-subject variability. In many scRNA-seq studies, samples are
+perfectly confounded with experimental conditions. In such cases,
+including subjects as a fixed effect may introduce collinearity,
+especially when the number of subjects is large.</p>
+<p>The single-component design matrix for the random effects can be
+created by <span class="math display">\[\begin{equation}\label{randomeff1}
+Z = model.matrix(\sim 0 + subject)
+\end{equation}\]</span> with a dimension <span class="math inline">\(d =
+ncol(Z)\)</span>. If appropriate, for example, we also take account of
+the measurement time as a random effect within a subject, we may
+consider the two-component design matrix given by <span class="math display">\[\begin{equation}\label{randomeff2}
+Z = model.matrix(\sim 0 + subject + subject:time)
+\end{equation}\]</span> with dimensions <span class="math inline">\(d =
+c(ncol(Z)/2, ncol(Z)/2)\)</span>, a 2-vector, where <span class="math inline">\(ncol(Z)/2\)</span> equals to the number of
+subjects.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="do">## Gene expression matrix, Y = log2(1 + counts)</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">log2</span>(<span class="dv">1</span> <span class="sc">+</span> dat<span class="sc">$</span>counts)</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="do">##Design matrix for fixed effects</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">log</span>(libsize) <span class="sc">+</span> cls <span class="sc">+</span> cls<span class="sc">:</span>trt, <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="do">##Design matrix for random effects</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fu">as.factor</span>(sam), <span class="at">data =</span> dat<span class="sc">$</span>meta)</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="do">##Dimension of random effects</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="fu">rm</span>(dat)</span></code></pre></div>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>dat<span class="sc">$</span>counts <span class="ot">&lt;-</span> <span class="cn">NULL</span>  <span class="co">#releasing memory</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="do">## Since the simulated data contains no covariates other than libsize (library size) and</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="do">## cls (clsters or cell types), the design matrix for fixed effects is given as follows.</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span> <span class="sc">+</span> <span class="fu">log</span>(libsize) <span class="sc">+</span> cls <span class="sc">+</span> cls<span class="sc">:</span>trt, <span class="at">data =</span> dat<span class="sc">$</span>metadata)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="do">## Note that the samples in the simulated data are nested in one treatment A or B. Design</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="do">## matrix for single-component random effects is given by</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span> <span class="sc">+</span> <span class="fu">as.factor</span>(sam), <span class="at">data =</span> dat<span class="sc">$</span>metadata)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="do">## Suppose the data contains different measurement time points within a sample, denoted</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="do">## as &#39;time&#39;, which are randomly generated. To account for the variability of the time</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="do">## within a sample, we may use the two-component random effects design matrix:</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">250801</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>dat<span class="sc">$</span>metadata<span class="sc">$</span>time <span class="ot">&lt;-</span> <span class="fu">runif</span>(n, <span class="dv">1</span>, <span class="fl">1.5</span>) <span class="sc">*</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, n, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>Za <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span> <span class="sc">+</span> sam <span class="sc">+</span> sam<span class="sc">:</span>time, <span class="at">data =</span> dat<span class="sc">$</span>metadata)</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>da <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">ncol</span>(Za)<span class="sc">/</span><span class="dv">2</span>, <span class="fu">ncol</span>(Za)<span class="sc">/</span><span class="dv">2</span>)  <span class="co">#dimension</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="fu">range</span>(Za[, <span class="dv">1</span><span class="sc">:</span>d] <span class="sc">-</span> Z)  <span class="co">#identical to the single-component design</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; [1] 0 0</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="fu">rm</span>(dat)  <span class="co">#releasing memory</span></span></code></pre></div>
 </div>
 <div id="lmm-fitting" class="section level3" number="2.2.2">
 <h3><span class="header-section-number">2.2.2</span> LMM fitting</h3>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="do">##Option 1: fit LMM by cell-level data.</span></span>
+<p>We use either <em>lmm</em> or <em>lmmfit</em> function to fit LMMs.
+With the cell-level data matrices <span class="math inline">\(Y\)</span>, <span class="math inline">\(X\)</span>
+and <span class="math inline">\(Z\)</span>, the LMMs can be fit by <span class="math display">\[lmmfit(Y, X, Z, d = d),\]</span> where <span class="math inline">\(d\)</span> is a vector of the numbers of
+random-effects in different components. For <span class="math inline">\(K\)</span> components of random-effects, <span class="math inline">\(d = (q_1, \ldots, q_K)\)</span>, where <span class="math inline">\(q_k\)</span> is the number of columns of the
+design matrix <span class="math inline">\(Z_k\)</span> for the <span class="math inline">\(k\)</span>-th random-effect component.</p>
+<p>The <em>lmmfit</em> function has a limitation of memory use. For
+extremely large-scale data, it is recommended to pre-compute and store
+the summary-level data: <span class="math inline">\(XX\)</span>, <span class="math inline">\(XY\)</span>, <span class="math inline">\(ZX\)</span>, <span class="math inline">\(ZY\)</span>, <span class="math inline">\(ZZ\)</span>, and <span class="math inline">\(Y_{norm}\)</span>, defined in <span class="math inline">\(\eqref{eq:sdata}\)</span>, and then use the
+<em>lmm</em> function to fit the LMMs as follows: <span class="math display">\[lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d =
+d).\]</span> The summary-level data doesn’t depend on the sample size
+<span class="math inline">\(n\)</span>. This makes <em>lmm</em>
+memory-efficient.</p>
+<p>The default method in the <em>lmm</em> and <em>lmmfit</em> functions
+is restricted maximum likelihood (REML), that is, method = ‘REML’. If
+you use the maximum likelihood (ML) method to fit the LMM, set method =
+‘ML’ in the <em>lmm</em> and <em>lmmfit</em> functions.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="do">##Option 1: Fit LMM based on cell-level data.</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>max.iter <span class="ot">&lt;-</span> <span class="dv">100</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fl">1e-5</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="do">##Option 2: fit LMM by summary-level data.</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="do">##(1) Compute the summary-level data.</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>XX <span class="ot">&lt;-</span> <span class="fu">t</span>(X)<span class="sc">%*%</span>X</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>XY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>X)</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>ZX <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>X</span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>ZY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>Z)</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>ZZ <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>Z</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>Ynorm <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(Y<span class="sc">*</span>Y)</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z) <span class="co">#release the memory.</span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="do">##(2) Fit LMM.</span></span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, </span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="fu">identical</span>(fit, fitss) <span class="co">#The two LMM fits are identical.</span></span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="fu">rm</span>(fitss)</span></code></pre></div>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="do">##Fit the LMM with one-component random effects.</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Z, <span class="at">d =</span> d, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="do">##Fit the LMM with Two-component random effects.</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">lmmfit</span>(Y, X, Za, <span class="at">d =</span> da, <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="do">##Option 2: Fit LMM based on summary-level data.</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="do">##(1) Compute the summary-level data.</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>XX <span class="ot">&lt;-</span> <span class="fu">t</span>(X)<span class="sc">%*%</span>X</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>XY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>X)</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>ZX <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>X</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>ZY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y<span class="sc">%*%</span>Z)</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>ZZ <span class="ot">&lt;-</span> <span class="fu">t</span>(Z)<span class="sc">%*%</span>Z</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>Ynorm <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(Y<span class="sc">*</span>Y)</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="do">##The summary-level data can also be computed by sslmm function:</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>ss <span class="ot">&lt;-</span> <span class="fu">sslmm</span>(X, Y, Z)</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>XX <span class="ot">&lt;-</span> ss<span class="sc">$</span>XX; XY <span class="ot">&lt;-</span> ss<span class="sc">$</span>XY</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>ZX <span class="ot">&lt;-</span> ss<span class="sc">$</span>ZX; ZY <span class="ot">&lt;-</span> ss<span class="sc">$</span>ZY; ZZ <span class="ot">&lt;-</span> ss<span class="sc">$</span>ZZ</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>n <span class="ot">&lt;-</span> ss<span class="sc">$</span>n; Ynorm <span class="ot">&lt;-</span> ss<span class="sc">$</span>Ynorm</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="fu">rm</span>(X, Y, Z, Za) <span class="co">#releasing memory.</span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="do">##(2) Fit LMM using lmm function.</span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>fitss <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, </span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="do">##The two LMM fits are identical.</span></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="fu">identical</span>(fit1, fitss) </span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="fu">rm</span>(fitss)</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="fu">str</span>(fit1)</span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt; List of 13</span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt;  $ method  : chr &quot;REML&quot;</span></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt;  $ dlogL   : num [1:2, 1:100] 5.63e-10 -1.82e-11 9.78e-07 -4.80e-08 7.37e-08 ...</span></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : NULL</span></span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;dl&quot; &quot;dl&quot; &quot;dl&quot; &quot;dl&quot; ...</span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="co">#&gt;  $ logLik  : num [1:100] -163060 -161757 -120461 -140372 -132523 ...</span></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a><span class="co">#&gt;  $ niter   : num [1:100] 4 4 4 4 4 4 4 4 4 4 ...</span></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="co">#&gt;  $ coef    : num [1:21, 1:100] 0.837 -2.997 -2.995 -2.995 -2.977 ...</span></span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a><span class="co">#&gt;  $ se      : num [1:21, 1:100] 0.0239 0.1415 0.1418 0.1415 0.1416 ...</span></span>
+<span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a><span class="co">#&gt;  $ t       : num [1:21, 1:100] 35 -21.2 -21.1 -21.2 -21 ...</span></span>
+<span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-57"><a href="#cb5-57" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-58"><a href="#cb5-58" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-59"><a href="#cb5-59" tabindex="-1"></a><span class="co">#&gt;  $ p       : num [1:21, 1:100] 7.05e-267 2.54e-99 9.14e-99 3.56e-99 5.69e-98 ...</span></span>
+<span id="cb5-60"><a href="#cb5-60" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-61"><a href="#cb5-61" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-62"><a href="#cb5-62" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-63"><a href="#cb5-63" tabindex="-1"></a><span class="co">#&gt;  $ cov     : num [1:21, 1:21, 1:100] 0.000572 -0.003025 -0.003033 -0.003025 -0.003027 ...</span></span>
+<span id="cb5-64"><a href="#cb5-64" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 3</span></span>
+<span id="cb5-65"><a href="#cb5-65" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-66"><a href="#cb5-66" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:21] &quot;log(libsize)&quot; &quot;cls1&quot; &quot;cls10&quot; &quot;cls2&quot; ...</span></span>
+<span id="cb5-67"><a href="#cb5-67" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-68"><a href="#cb5-68" tabindex="-1"></a><span class="co">#&gt;  $ df      : int 99979</span></span>
+<span id="cb5-69"><a href="#cb5-69" tabindex="-1"></a><span class="co">#&gt;  $ theta   : num [1:2, 1:100] 0.0483 1.5264 0.073 1.4869 0.0374 ...</span></span>
+<span id="cb5-70"><a href="#cb5-70" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-71"><a href="#cb5-71" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;var1&quot; &quot;var0&quot;</span></span>
+<span id="cb5-72"><a href="#cb5-72" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-73"><a href="#cb5-73" tabindex="-1"></a><span class="co">#&gt;  $ se.theta: num [1:2, 1:100] 0.01435 0.00683 0.02164 0.00665 0.01106 ...</span></span>
+<span id="cb5-74"><a href="#cb5-74" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb5-75"><a href="#cb5-75" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;var1&quot; &quot;var0&quot;</span></span>
+<span id="cb5-76"><a href="#cb5-76" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:100] &quot;Gene1&quot; &quot;Gene2&quot; &quot;Gene3&quot; &quot;Gene4&quot; ...</span></span>
+<span id="cb5-77"><a href="#cb5-77" tabindex="-1"></a><span class="co">#&gt;  $ RE      : NULL</span></span></code></pre></div>
+<p>The outputs from LMM fitting contain:</p>
+<ul>
+<li>estimates of LMM parameters (coefficients and variance components),
+standard errors of the estimates;</li>
+<li>covariance matrix of the coefficients (fixed effects), and t-values
+and p-values for the hypothesis testing on the coefficients;</li>
+<li>maximum log-likelihood, the number of iterations, and the first
+partial derivatives of the log likelihood.</li>
+</ul>
+<p><strong>Convergence of LMM fitting</strong>: If the absolute first
+partial derivatives of the log likelihood are all less than the
+convergence tolerance, assigned by the argument <em>epsilon</em> in the
+<em>lmm</em> and <em>lmmfit</em> functions, the LMM fitting converges,
+otherwise it doesn’t converge. The genes for which LMM fitting doesn’t
+converge should be excluded in the subsequent analysis because the
+estimated coefficients for these genes are not reliable.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="do">##Check the genes for which LMM fitting converges.</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>convg <span class="ot">&lt;-</span> (<span class="fu">apply</span>(<span class="fu">abs</span>(fit1<span class="sc">$</span>dlogL), <span class="dv">2</span>, max) <span class="sc">&lt;</span> epsilon) </span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">sum</span>(convg) </span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span></code></pre></div>
 </div>
 <div id="hypothesis-testing" class="section level3" number="2.2.3">
 <h3><span class="header-section-number">2.2.3</span> Hypothesis
 testing</h3>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="do">##Testing coefficients (fixed effects)</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#head(test)</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="do">##The testing t-value and p-values are also provided in the LMM fit.</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">range</span>(test <span class="sc">-</span> <span class="fu">cbind</span>(<span class="fu">t</span>(fit<span class="sc">$</span>coef), <span class="fu">t</span>(fit<span class="sc">$</span>t), <span class="fu">t</span>(fit<span class="sc">$</span>p))) <span class="co">#identical</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; [1] 0 0</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#fit$t[, 1:4]</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#fit$p[, 1:4]</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>fit<span class="sc">$</span>coef[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt;                   Gene260    Gene724     Gene774     Gene616</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; log(libsize)  0.823538186  0.9338158  0.84825642  0.47303182</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; cls1         -5.033788454 -5.4098141 -5.22008950 -3.01064722</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; cls10        -5.016216620 -5.4194900 -5.23064461 -2.97351422</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; cls2         -5.023813654 -5.4187129 -5.23977394 -2.96924442</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; cls3         -4.997721940 -5.3974915 -5.23458730 -2.97942173</span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; cls4         -5.020303938 -5.4443891 -5.22523214 -2.98406521</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; cls5         -5.034040308 -5.4158073 -5.21912587 -2.96949879</span></span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; cls6         -5.039858094 -5.4040391 -5.22563185 -3.01283214</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; cls7         -5.032770530 -5.4027480 -5.21182988 -2.96310244</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; cls8         -5.027633571 -5.4037420 -5.22567389 -2.99787326</span></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; cls9         -5.011484228 -5.3934569 -5.21931480 -2.97552877</span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; cls1:trtB     0.042932556 -0.2901492 -0.05952280  0.11278682</span></span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; cls10:trtB    0.027706615 -0.2490376 -0.03298227  0.05911209</span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; cls2:trtB     0.043924185 -0.2725758 -0.06385726  0.06042628</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; cls3:trtB     0.034137125 -0.2807799 -0.03698257  0.04462700</span></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; cls4:trtB     0.048231220 -0.2272270 -0.01519083  0.08609152</span></span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; cls5:trtB     0.040408456 -0.2817817 -0.05896284  0.05373212</span></span>
-<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; cls6:trtB     0.075970031 -0.2511360 -0.03689410  0.11972056</span></span>
-<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; cls7:trtB     0.029742613 -0.2712344 -0.07932668  0.06190330</span></span>
-<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; cls8:trtB     0.021522916 -0.2660295 -0.04673630  0.07685644</span></span>
-<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; cls9:trtB     0.005106265 -0.3013190 -0.08311758  0.06462308</span></span></code></pre></div>
-<p>The coefficients of the interaction term cls<span class="math inline">\(\ast\)</span>:trtB represent the effects of the
-treatment B versus A in a cell-type (cls<span class="math inline">\(\ast\)</span>). We can make a comparison of the
-treatment B versus A within all cell-types by constructing a contrast by
-summing the treatment effects across cell-types as follows.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="st">&quot;BvsA&quot;</span> <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(fit<span class="sc">$</span>coef)))</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>contrast[index, ] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">length</span>(index)</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="do">##Test the contrast.</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">head</span>(test)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t     BvsA_p</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; Gene260  0.03696820  0.4499201 0.65276901</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Gene724 -0.26912699 -2.0665983 0.03877459</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; Gene774 -0.05135733 -0.4228609 0.67239767</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; Gene616  0.07398792  1.4665370 0.14250518</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; Gene581  0.05802063  0.7702806 0.44113530</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; Gene591 -0.06573230 -0.8597515 0.38992809</span></span></code></pre></div>
-<p>The contrast can also be constructed by contrast.matrix function as
-follows.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>BvsA <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">paste0</span>(<span class="st">&quot;cls&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="st">&quot;:trtB&quot;</span>), <span class="at">collapse =</span> <span class="st">&quot;+&quot;</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>BvsA <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;(&quot;</span>, BvsA, <span class="st">&quot;)/10&quot;</span>)</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>BvsA</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;(cls1:trtB+cls2:trtB+cls3:trtB+cls4:trtB+cls5:trtB+cls6:trtB+cls7:trtB+cls8:trtB+cls9:trtB+cls10:trtB)/10&quot;</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">contrast.matrix</span>(<span class="at">contrast =</span> <span class="fu">c</span>(<span class="at">BvsA =</span> BvsA), <span class="at">model.matrix.names =</span> <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit, <span class="at">contrast =</span> contrast)</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="fu">head</span>(test)</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt;           BvsA_coef     BvsA_t     BvsA_p</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Gene260  0.03696820  0.4499201 0.65276901</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Gene724 -0.26912699 -2.0665983 0.03877459</span></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Gene774 -0.05135733 -0.4228609 0.67239767</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Gene616  0.07398792  1.4665370 0.14250518</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Gene581  0.05802063  0.7702806 0.44113530</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Gene591 -0.06573230 -0.8597515 0.38992809</span></span></code></pre></div>
+<p><strong>Testing of fixed effects using the <em>lmmtest</em>
+function</strong></p>
+<p>Although <em>lmm</em> and <em>lmmfit</em> functions return t-values
+and p-values for testing the fixed effects (coefficients), we can also
+use <em>lmmtest</em> function to conduct statistical tests on the fixed
+effects and their contrasts for various comparisons between different
+levels.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="do">##Testing coefficients (fixed effects)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit1)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="do">##The t-value and p-values are identical with those provided in the LMM fit.</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">range</span>(test <span class="sc">-</span> <span class="fu">cbind</span>(<span class="fu">t</span>(fit1<span class="sc">$</span>coef), <span class="fu">t</span>(fit1<span class="sc">$</span>t), <span class="fu">t</span>(fit1<span class="sc">$</span>p)))</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; [1] 0 0</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>fit1<span class="sc">$</span>coef[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;                    Gene1        Gene2        Gene3      Gene4</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; log(libsize)  0.83712370  0.815346582  0.609785453  1.0811460</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; cls1         -2.99711303 -2.770377841 -2.443269081 -3.7210080</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; cls10        -2.99477580 -2.770040504 -2.429391852 -3.7073470</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; cls2         -2.99466685 -2.743763947 -2.435933647 -3.7256140</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; cls3         -2.97706542 -2.754190732 -2.432881943 -3.7190633</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; cls4         -2.97413935 -2.755044022 -2.455657052 -3.7082038</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt; cls5         -2.99039453 -2.762545257 -2.427748585 -3.7123421</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; cls6         -2.98074999 -2.747882597 -2.438762777 -3.7219514</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; cls7         -2.98944217 -2.793347458 -2.446139670 -3.7233747</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; cls8         -2.94949402 -2.728670124 -2.424298237 -3.7448112</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; cls9         -2.97601511 -2.728735173 -2.445063375 -3.7358832</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt; cls1:trtB     0.11700126 -0.017459519  0.005427563 -0.1726133</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; cls10:trtB    0.13519741 -0.018591565  0.025108329 -0.1701416</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt; cls2:trtB     0.14652033 -0.032295910 -0.006637487 -0.1376565</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt; cls3:trtB     0.12578238 -0.057134984 -0.012688736 -0.1467455</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt; cls4:trtB     0.09257895 -0.036546217  0.040026452 -0.1472434</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; cls5:trtB     0.13726104 -0.051430048  0.010164625 -0.1592534</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; cls6:trtB     0.09969125 -0.029924922  0.007534469 -0.1434095</span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; cls7:trtB     0.13224193  0.004360562  0.028405146 -0.1716329</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt; cls8:trtB     0.10008302 -0.069260573 -0.004854496 -0.1530307</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; cls9:trtB     0.13244395 -0.073164417  0.032615275 -0.1311506</span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#fit1$t[, 1:4]</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#fit1$p[, 1:4]</span></span></code></pre></div>
+<p><strong>Differentially expressed (DE) genes</strong>: The
+coefficients of the interaction term cls<span class="math inline">\(\ast\)</span>:trtB represent the effects of
+treatment B versus A in a cell-type (cls<span class="math inline">\(\ast\)</span>). The DE genes between two
+treatments in a cell-type can be identified based on the false discovery
+rate (FDR) or family-wise error rate (Bonferroni correction).
+Additionally, we may exclude genes with small coefficients (effect size
+or log-fold change).</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="do">##The DE genes specific to a cell-type</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values for the genes specific to a cell-type.</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit1<span class="sc">$</span>coef))</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>ce <span class="ot">&lt;-</span> fit1<span class="sc">$</span>coef[index, ]</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>tv <span class="ot">&lt;-</span> fit1<span class="sc">$</span>t[index, ]</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>pv <span class="ot">&lt;-</span> fit1<span class="sc">$</span>p[index, ]</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    <span class="at">gene =</span> <span class="fu">rep</span>(<span class="fu">colnames</span>(ce), <span class="fu">nrow</span>(ce)), </span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    <span class="at">cluster =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(ce), <span class="at">each =</span> <span class="fu">ncol</span>(ce)),</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>    <span class="at">coef =</span> <span class="fu">c</span>(<span class="fu">t</span>(ce)), <span class="at">t =</span> <span class="fu">c</span>(<span class="fu">t</span>(tv)), <span class="at">p =</span> <span class="fu">c</span>(<span class="fu">t</span>(pv)))</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="do">##FDR.</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>out<span class="sc">$</span>FDR <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(out<span class="sc">$</span>p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="do">##The DE genes with FDR &lt; 0.05 and abs(logFC) &gt; 0.5</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt;     gene    cluster       coef         t            p          FDR</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; 1 Gene94  cls2:trtB  0.9623800  9.388327 6.218300e-21 6.218300e-18</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; 2 Gene97  cls3:trtB -0.7280366 -8.058266 7.822917e-16 3.911459e-13</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; 3 Gene92 cls10:trtB -0.7872053 -7.552437 4.307974e-14 1.435991e-11</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt; 4 Gene96  cls3:trtB  0.7869040  7.170842 7.505135e-13 1.876284e-10</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; 5 Gene98  cls5:trtB -0.7950199 -6.530485 6.586976e-11 1.317395e-08</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; 6 Gene99  cls6:trtB  0.8171681  6.479861 9.223164e-11 1.537194e-08</span></span></code></pre></div>
+<p><strong>Using contrast</strong>: We can make a comparison of the
+treatment B versus A across cell-types via the contrast that sums the
+treatment effects across cell-types as follows.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="do">##Construct the contrast.</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="st">&quot;BvsA&quot;</span> <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(fit1<span class="sc">$</span>coef)))</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit1<span class="sc">$</span>coef))</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>contrast[index, ] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">length</span>(index)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">length</span>(index)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; [1] 10</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="do">##Test the contrast.</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit1, <span class="at">contrast =</span> contrast)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="fu">head</span>(test)</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;         BvsA_coef     BvsA_t    BvsA_p</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; Gene1  0.12188015  1.3803539 0.1674808</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; Gene2 -0.03814476 -0.3517828 0.7250019</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; Gene3  0.01251011  0.1613397 0.8718262</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; Gene4 -0.15328775 -1.1955128 0.2318896</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; Gene5  0.11304765  1.1300582 0.2584544</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt; Gene6 -0.01584361 -0.1642750 0.8695150</span></span></code></pre></div>
+<p>The contrast can also be constructed by <em>contrast.matrix</em>
+function as follows.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>ncls <span class="ot">&lt;-</span> <span class="dv">10</span> <span class="co">#length(index)</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>sumeff <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">paste0</span>(<span class="st">&quot;cls&quot;</span>, <span class="dv">1</span><span class="sc">:</span>ncls, <span class="st">&quot;:trtB&quot;</span>), <span class="at">collapse =</span> <span class="st">&quot;+&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>sumeff <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;(&quot;</span>, sumeff, <span class="st">&quot;)/&quot;</span>, ncls)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#sumeff</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>contrast <span class="ot">&lt;-</span> <span class="fu">contrast.matrix</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>            <span class="at">contrast =</span> <span class="fu">c</span>(<span class="at">BvsA =</span> sumeff), </span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>            <span class="at">model.matrix.names =</span> <span class="fu">rownames</span>(fit1<span class="sc">$</span>coef))</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">lmmtest</span>(fit1, <span class="at">contrast =</span> contrast)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="fu">head</span>(test)</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;         BvsA_coef     BvsA_t    BvsA_p</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; Gene1  0.12188015  1.3803539 0.1674808</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; Gene2 -0.03814476 -0.3517828 0.7250019</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Gene3  0.01251011  0.1613397 0.8718262</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; Gene4 -0.15328775 -1.1955128 0.2318896</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; Gene5  0.11304765  1.1300582 0.2584544</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; Gene6 -0.01584361 -0.1642750 0.8695150</span></span></code></pre></div>
+<p><strong>Testing of variance component in the LMM with
+single-component random effects</strong></p>
+<p>Since the simulated data is generated by the LMM with
+single-component random effects, see Section <span class="math inline">\(\ref{simulator}\)</span>, the variance component
+of random effects should not be zero. Next we use z-statistic <span class="math inline">\(\eqref{zvarcomp}\)</span> to test the variance
+component. Note that ‘fit1’ is the output of fitting the LMM using
+<em>lmmfit</em> function, see Section <span class="math inline">\(\ref{LMMfit}\)</span>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="do">##Using z-test for testing variance components</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;var1&quot;</span>, <span class="fu">rownames</span>(fit1<span class="sc">$</span>theta))  <span class="co">#The (first) variance component</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>z <span class="ot">&lt;-</span> fit1<span class="sc">$</span>theta[i, ]<span class="sc">/</span>fit1<span class="sc">$</span>se.theta[i, ]   <span class="co">#z-statistics</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="do">##One-sided z-test p-values for hypotheses:</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="do">##H0: theta &lt;= 0 vs H1: theta &gt; 0</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(z, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="do">##Number of significant p-values</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="fu">sum</span>(p <span class="sc">&lt;</span> <span class="fl">0.05</span><span class="sc">/</span><span class="fu">length</span>(p)) <span class="co">#Bonferroni correction</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span></code></pre></div>
+<p><strong>Testing of variance component in the LMM with two-component
+random effects</strong></p>
+<p>As the LMM design given in Section <span class="math inline">\(\ref{LMMdesign}\)</span>, the LMM with
+two-component random effects has two variance components, the first one
+for random effects of subjects and the second one for random effects of
+measurement times within a subject. Since the simulated data was
+generated by the LMM with one-component random effects (i.e., subjects),
+the second variance component should be zero. Next we use both
+z-statistic <span class="math inline">\(\eqref{zvarcomp}\)</span> and
+LRT statistic <span class="math inline">\(\eqref{lrtvarcomp}\)</span> to
+test the second variance component of the random effects. Note that
+‘fit2’ is the output of fitting the LMM using <em>lmmfit</em> function,
+see Section <span class="math inline">\(\ref{LMMfit}\)</span>.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="do">##(1) z-test for testing the second variance component</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="do">##Z-statistics for the second variance component</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;var2&quot;</span>, <span class="fu">rownames</span>(fit2<span class="sc">$</span>theta)) </span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>z <span class="ot">&lt;-</span> fit2<span class="sc">$</span>theta[i, ]<span class="sc">/</span>fit2<span class="sc">$</span>se.theta[i, ] </span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="do">##One-sided z-test p-values for hypotheses:</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="do">##H0: theta &lt;= 0 vs H1: theta &gt; 0</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(z, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="do">##number of significant p-values</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">p.adjust</span>(p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>) <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="fu">sum</span>(p <span class="sc">&lt;</span> <span class="fl">0.05</span><span class="sc">/</span><span class="fu">length</span>(p)) <span class="co">#Bonferroni correction</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="do">##(2) LRT for testing the second variance component</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>LRT <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">*</span>(fit2<span class="sc">$</span>logLik <span class="sc">-</span> fit1<span class="sc">$</span>logLik)</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>pLRT <span class="ot">&lt;-</span> <span class="fu">pchisq</span>(LRT, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a><span class="do">##number of significant p-values</span></span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">p.adjust</span>(pLRT, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>) <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a><span class="fu">sum</span>(pLRT <span class="sc">&lt;</span> <span class="fl">0.05</span><span class="sc">/</span><span class="fu">length</span>(pLRT)) <span class="co">#Bonferroni correction</span></span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a><span class="do">##QQ-plot</span></span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a><span class="fu">qqplot</span>(<span class="fu">runif</span>(<span class="fu">length</span>(p)), p, <span class="at">xlab =</span> <span class="st">&quot;Uniform quantile&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Z-test p-value&quot;</span>)</span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">&quot;gray&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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pGdACAiB1BAQAaUGvQ4sBISACEjPgBAQAqkhIAJKDXodWAgIARGQngEhIARSQ0AElBr0OrAQEAIiID0DQkAIpIaACCg16HVgISAEREB6BoSAEEgNARFQatDrwEJACIiA9AwIASGQGgIioNSg14GFgBAQAekZEAJCIDUERECpQa8DCwEhUPcEFGMMn332Wfjyyy91N4WAEKgzBOqSgD788MMwcODA0KtXrzDRRBOFGWaYIfztb38LU089dVh00UXDgQceGL7//vs6uxU6XSHQfAiMZxpErKfLfvfdd8MKK6wQxhtvvNC3b98w55xzhummm86/owWNGTMmXH/99YHLGjlyZJhrrrnq6fJ0rkKgqRCoOwLaa6+9wgsvvBDuvffeMPHEE5e8Wb/99ltYd911Q58+fcJRRx1Vch3NFAJCIH0E6s4Ee/7550P//v3Lkg+QduvWLWy//fbhzjvvTB9hnYEQEAJlEag7Aurdu3d45JFHyl5QsuC+++4Ls8wyS/JVn0JACGQQgQkzeE6tntLWW28dIKFPPvkk9OvXz308OKDHH398j4S988474corrwx33HGHm2mt7qwDC08//fRw9tlnu+O7A7vRpkKg3Qjg5/zzzz/d38nzz1++TDLJJOG2224LU045Zf7sTE3XHQEttthi4X//+1/Yddddw3bbbec3oBjRNdZYI9x9991h5ZVXLl5Us++XX355OPXUU0VANUO0uXeUkAkoQCRjx44NN998c/j888/DggsuGCCTCy64wL9DOgRh+GRdNP3333/fP//73/+GCSaYIPz888/hlFNOCaNHj/bIcFbRrTsCAsi5557bI1y//vpreO+99wJaD47nmWeeOcw666weku9swCeccMIw1VRTheWWW66zD6X9NzgC+CuvvfZaJw0udfrpp/fcNqK7aC9o84nwzH377bfJ17DiiiuGUaNGhaOPPtoDLkceeWQ44YQTwu+//+5klVsxoxN1SUAJluQAQUb8SYRAvSBwzz33hHPOOSd8/fXX4cUXX3SymWyyycLf//53TyP59NNP/VKGDh0aHn300XD++ef7d6K+kM9xxx0XDjvsMJ/37LPPuivgmGOOCez3gw8+CB999FFYb7316iIXrq4JqLUH7rvvvgtoKZNOOmlrq7VYhvP6jDPOaDG/eAbRuMcffzwsv/zyxYv0XQi0QACN5NVXXw0DBgwITz31lGs5P/zwQ/jxxx993f/85z8evcW1wIv1jz/+CKScYErxHJPzds0114RNN900QDoQGMsxt9CAjjjiCNd4qAp44403wkYbbdTiHLI4o2EJqGfPnmHNNdd01bYa4NGm8C1VEkL82OESIVAKAfwz/KGRPPTQQ+Ff//qXaybJuhAFAoFANoMGDXLigFRwJ0BCM800UyDxtnv37mG22Wbzl+nHH38c5p9//tzLlSqAddZZx78//fTT7pDGdKsXaVgC2nvvvcM888xT9X2AuPirJLyVJp988kqraXkTIoCzGI3mrbfe8qvPLzYginvyySeHGWec0ZdBPhtvvLH7NIlYYWahvdx+++3ux4HEvvnmm4BmzvQXX3wRVl999YCvB+LZcMMN3WGNw3nIkCFhp512ChBR3YiBI2kHAlNMMUU877zz2rGlNmlkBIwIKG3yv8033zwaueS+M3/hhReOpuHEYcOG+Xx7kUXTdqIlz8bDDz88WgZ/NM06t42RjU+znO2nmWaaaAQVjeCiZflH03ai1T/m1j/22GNz8C6yyCLRXAW571mcKEwcqECb2KyEwCn0/OWXXyqsrcVCoLkQwKG8//77h2WXXdZD4vgSKRtaZpll3NTC3Prqq6/CiBEj3OFMxj6+IaK5mF1zzDFHuOqqq9yMAjn2g8aEsBxhHv4g/D6DBw927eill14KCy20kDurE+e0r1wH/9pkgmHH7rfffuGGG27wS3riiSccKMwQwn948CVCoFkR4GVM/g0OZvyCBCiYR1pIL+vYQA4P4XMcyvyW+B0R2cLcIo8neZnjgMaEQtj2lVdeCbvvvru7BCAecuDYF2F20j8w2eabbz4vyC5OQqyXe1GRgGBnbFKYGjsTZxlC/gGAExY0U6TLrneppZbyG9OWA2622WbhiiuuaMuqWkcItIoAUVWepQceeMCdxbSEgVCIspIsiC8HgVQgFDQRwuXvWI4amg7LE5K49NJL3SGd3zKGrg1YGPh4Lr74Ys/yT06IY2F5oCHNO++84YADDkgW1f1nRQKi6hwACO3RbwfnF2L2rbM6ESOzLbssIgQJcmyI0Wzm3E0tdSe4WRIh0FEEiEQtsMACbgbxIk6EF9yNN96YfHWzaP3113cCgnwwyYjEvvnmm7l1mCDIQc5OIv/3f//nJMXviy4OSfAEswsTjnwhNJ5pp5022aRhPisSEOCRIAU4xbL00ksHwoKwPOzcFYLm9fDDD7s6ylvloIMO6orD6hhNigAaSWJGJeRD6JswOuTD7wIrAE2IvDCiUphjREjN4ezfiWCh3SRC9j5hdnLIqCeE3IqFZMTnnnvOQ/Grrrqq+5CK12mE7xWd0BAL1edJ3kL+RQM0fqCurjpHsyHkSPYnD4hECHQWAvg+EXw7/PG8b7HFFjmtH62E55H5Z555pvtGN9lkEyccTC/8NJAP+WU4pbEW+MNMw5FcTD68VDG3IJ8lllgiWCSrYcnHga0UmjPbN1rXwWi+l2ge+kj42WxhDxlaglS03jyVdtEpy+1tFO3NEq0qvlP2X2mnCsNXQqj+l5uZH02z8RC3JQh6SJ3fgf1womlF/mkBmGiRL582rccv2kwm3860dZ9v5libwLCOntFMs2h5PJFjd1TqIQwPG1cUs0Pj4osv7mACfvJnTB8trFhx+0ZcQQTUiHd13DXdf//90YpC/Vk3x7J/WqGz5+GYyRX5cfM7IGfH2sJEyIfvFsWK//znP32a72ZmjdtpmSnTeqKVaUQrOo0WJSuzVvWzG4aAuHRAevLJJ6P12onXXXddtBBh9Yg00BYioAa6mUWXwrMNefzjH//wJEGLXkXLbvZ5Vp0eIaQkkZD1kj8LlUczxfw7iYNW5V6055ZfITMzxaK5OeJPP/3UcoUOzGkoAuoADg25qQioIW+rX5Tl20RzLrsGZHk3OYKxQlCftoTC3DzICQKClCAdngvzT1YEx8oq4ttvvx2t5CJaz56K67dnhXogoIpRMDz7FNK1JjjTJEKgERCggReJhOTqMOKKaTHBiMIvLenLg8MZZzH1XCQF0gAPpzI5QBSQJvk+5fAwTcedzETVVlpppWCkVW7Vhp9fkYASUPORIOz42muveVZnEiXIX65pIVCvCOy7776ebUziIdnKkAUCSRDNIrJl2ojPIzeu2nanZEKTHwS5ET0jstbMUpGAzPkcrr766hYYcROoOCenQSIEGgUBNH40HFI8jj/+eK8833nnnb3+kZcxmg6/CdqxVEM+JM6SVMjLm/wfKyptFMg6dB0VCajc3mFukgDJb+BN0cxqZDmMNL8+EKB9BeYV5IDmA1lQJkGi4SWXXOIFpPRlJiOaTHx69kBSbZUkqZB8OXJ7KEqV/IVA21EsgRgjU2AL069EBFQCIM3KJAJoMY899phr72g81F7RxCvRcDhpmrwnPaWo+Uoy/alObyv54ON5+eWXvV/Pkksu6Y3FMglIiidVkYAos7j11lsLThHSYRhkNB+6s3V1JnTByeiLEKgCAZ5bTCDqrOjiAEEgF110kb9MqeVC8M+8/vrrXn/F6BTbbrut13DxsqUUo5JwnGeeecYHSFhttdXcd1Rpm2ZcXpGAaAlw8MEHt8CGWhfaA5x22mktlmmGEMgiAvRfZgw5NJ211lorDB8+3E9zgw02CJbz40WjtD+lGJS+zRbGdqJCe2Fd6rxok9Ga0LUQ4sJcY/tK67e2r2ZYVpGA6K6PyioRAvWOAJXmCFXsEASBFFJMCKWjpdAMbI899vBP1rNkQ28IxnqE1qkB48VbTvAh0TCenj2rrLKKf5ZbV/P/QqAkAVEIRyPttso+++zT1lUzvx7mZtJypLWT5W1KSFVSHwjgCH7wwQf9ZBm0kpcqgRTIh6ZfI0eOdHMMtwK5QPRzxjGNNsMzgfbD2F2lBIJiG9alc8Tss89eajXNK4FASQIisbBS8mH+vhqJgFZYYQV3SuZfX6lphoduiy+g1Laa17kI4DSmxw69rIhqITiVE0lMsaQhGKSDhgPJIPh5EBzPkNSJJ57oyYY+s+gfeUL4ejC9GIm3NQ2paFN9NQRKEhB9bflrRiEa0pZhTQil0tNFki0ECJD06NHDR8glQHLXXXe5c5nQOoLjuZe1SUVTIZOZFhlJnx/uJ2YWLTTo8kn+T2sCqZFUiM+IdJRmTypsDatyyyr2Ayq3YTKfJtsSIZAVBMjMh4TQTEgUJHuZrONE8P8QWKGvuY0mUTC0Nv2tMLsY5K818oHMrDDbndZ9+vRxAhL5JAhX91lSAyreBaosDrn83rfcZFRZ0tHlpC5GTN/TQoCsfUiH5xLfDiOI0ug9yd2hrzOmFk2/SKTFYYyg9TLAAmYUgwCWk7Fjx3qtGOvQn7xS3Ve5/Wj+XwhUJCDUTJrS8zZBbcVBTQiT/Alu8kknnSQshUBmEKB/Mv2WE8Ipzjqm+BM/Db4h6roYVQJSWXvttcM222xT9jow0xj+Bmc2rYgJ50s6jkBFE4z+yzjYqAi+6aabPE39sssu82JUhhHB+y8RAllCgBcjQkDh8ssvdy2FUgqESBjLSRTEyZxEe//973/78lL/WJe+zkS76M8s8imFUvvmVSQgms4zJhGlFjTgpt0A9jM2L+FqIgjJoGntOwVtJQQ6jgBF0dRoIXvuuadrNrgM+MNMwu+TCOYX43RRHMrLFVIqZXaxjO3w95BUSBEqWpOkdghUJCDeEmPGjMkdkcgCTeqRZJgQ5cPk4NFECgiQVEjuDX7KpMk7Wg4+no8++igXrYSIeHGiyRCq52WKZsNIK8VCUiFjgGGqofUkY7kXr6fvHUOgIgFRN4NdTWMmIl58xwTjLWLjUwfrm+thzY6dhrYWAu1DgGeyl4XVEQiGZECIJRGiYeRr4TBmiCm+488hcMKLFXLJF8iJJERcD0TP0P4p3ZB0DgIVCQjmv/DCC73/Cc46IguopoQwjzrqqIAfSCHIzrk52mtlBGiXgZDDc+CBB3pNF24DhIgWOUE4pB999FEnlNbIhKguxMP2q6yyijKaHcXO/VcxCsbh+/btGzbeeGPvY0JUgXoXIg0U6eXnWHTuqWrvQqAQATQZhimGYGjwRUYyzyOOZ6rX8QtBQLSNqeS7wYwjsksVPMMk66VaiHVnfatIQPRNGTFiRGAIZm4Mws2GlLImhEjJdFVvoqzdmdqcD22AqVLnHhPhOv30033HEBH3Hn8OTmcbwcIz+U899VSPWBFqLyeYYvSARvthnzinJV2IgNm8rYrd8GhvER//yFTaaM2botXQtLpNZy+0KFy0vi3RHIV+KCsWjOaE9NEJTEOL1nUuWmSjU0/DSC5aun6nHkM7/wsBM/n9flv+jg8IaKUPfq/tZ+KfFijx+aYJ+XeGx2HdZLk5k0tCaQ5qH4vLNB8fdqrkSnU8sx5GxajoA8J59+GHHwYbPsR7m9CuAL/QjjvumMuh6EK+9BSA5ZZbztPtOS4d7Wy4FH/TUTRIy0w0IJIlkxyPrjw/Has2CBBppUVGz549/X7y/GFu2SijBY5jXAJDhw4NNM5LspJJEyEbGiF3jeTDfCFthIRaEgtxMpMjlGybv56muwCBagkercO6x0XLHPVxkKwIr9pddGh9G7UgWip9bh877LBDtI6M0R6q3DwmVl999WgkWTCvll+kAdUSzcJ9XXPNNa69WOa9P2f2M/Dv3GczmeIXX3wR0XSNNPyP5da/2bVzcxXkNB/LWC7csX0zEy1agWo0AmrxzLRYuc5nNIQGVMyBvD0oxqMWzO5Pl4coaSC+zjrr5E6LFAEc5EnqfbKA3r3Y9pL6QoDcGxva2O8pGgrJr2hBzMO/c+aZZ7qDGCexDZWcuzh8kgMHDvRKdmbiJ8ovKOV5xcmMD4kILt08i5+Z3M400WUIVDTBOBOStq6//vpgY8F7jgW9gmg/gJrMQ9KVQkaqDQ3t58RxCZfSMIoHLBGIEcd5kpSWzNdnthHg5Ub7X0LlvEAgHHrz4GSmUp0kWIbKIQGW3B6SBEkJwfSmCp77TdQLwalMm1WEfUBsmGWYdck6vlD/0kWgkpZpUTAfptbeONFGgPSx4S2Zq9JmnbbcbP1otTgR9dIqnyNOcs7L2iL4+N2o71Y860PlmrbUaechE6y20BphxGWWWcbvm1WmR2uf6qaUFYj682cRrWgajZv9HNnSQHw598F+QW6qma/Hp61wOlroPeK8tsREdzRbSL62J1wHe6sHEwwzqlWBgCzhMFqeRKvrdeVCohZbbbWV+wF4+Ir/rGbH7fzOPCcRUO3QxX/HPcRnA/FMOumk0bSVaA7kgntr6R/RspwjUa2FFlrIl1nYPLcOPiELPnh0lEgt61liYYTcmlHqgYAq5gERceIvS0LUggbidLMjnZ4oHWo2IxBQVNha3keWrkPn8hcC5O8QWaXoE/Ma8xn/zmeffeYjlOL3Y2gc/H0IXQsxsSitwBWAKUZ7VcwyomJExCgi5TkgMVFJhX/hnMX/FQmo+KQZwoTiPRx+aQttEfgjVaBYeChxMtrbtHiRvmcMAeq3ksRWPocMGeI9nbl/9N5J/IwEH+hJlTilE18Ovar4w1cJiZFcyDPKPEm2EaiagJK3TrYvK/hDuuaaa5YdyaDc+aNZJW0dyq3DfN64vGklHUeAl0gyYgV7O/zww/2lQqsXyiuIhDGSBZnK5YSqd9prUJiK5qO8nnJIZWt+1QSUrdMvfzbJsLrl1yi9BPU+GT+q9Bp/zcXU400s6TgCRKa4XwyNY/lbvkO0HQsueA0X3RfKkQ+RMzozUBWPqyBpEdPxs9IeugKBhiUg+vu2R6iqbstoF/gV9JZtD8Itt8H/Q6YzrV5o/4uZhXnF0DrHHnusF5a23Cq4j4jCaLYnHUN5PaVQyva8qggI25qyB4tAZOaqLLrh+SI4H9synE5mTlwnUoAA7TIssujD3FAAjQPawvLh0EMPLViPL+R8vfrqqx58oEuhxmdrAVHdzGhTIiIPA0M084DQO5dWB9x06q7SEKJeOMGx99FWOBf8CPgKyHKlLww+Gkl9IECSIfeMRmD0GKeyncZhOJRJTMwXImGjbOBMltNMTOSTj079TVfUgCi7IBLB8CU8JNjlmB+8sQYPHuzNvYladJXQtwV/AOdAxIQwK5oP32keTlierO0bbrjBfQpJC5GuOj8dpzoEyGTGXIaEKLOAhDC/8MWRCc2gfzxnjGRBm1UIauGFFy4ow6juiFo7SwhUJCAqymnoxKgY5NkkgrOQMCc2Op0Ru8ofQtp9L9N8GKusXHc7KqZxJOO85Nwk2UMAciH8Ts0WpLPlllsGKzT2ch9eIoTR6etDPhCR1yStAl+PUiuydz/be0YVTTDeOmg9+eSTHIyHhgepK5vSU2Dav3//suTDudH9bnvrYX3nnXcmp6rPDCBATRf3BGczTeRpGo9PkUgWo5HSQIyiU2oNCaszoCAaLiY3RMR2Ip8M3MgankJFAqKXCj13So3/ZW05XBvpynB07969c6NytIYD2bXWvqG1VbSsCxGgYJgQOZopzxOZzHySq4VvETMMTSgRum7S54fnD21IGc0JMo31WdEEw7+Cz4XQKA8D+Rk8MDR9ovcuY20zOkYi1p/HR8pIvtf6kyppSAizsF+/ft4mFgc0JiA+IJIDr7zySh/jGzNNki4COJQZb53nIhGavuPLI28HM4tRSa1Hj/t2CMcjaNa0zmB7GpFJGhOBigREkhfaBNEm3lj8JYJjmoeLv0SsVWqnEhB9XDgnRuOgTzVOzGLBZCRzllERJOkggFnF/bntttu8nUZyFrzQGDaHzpq0c0EjYiQKyGbzzTf3TyJbEBRmGj4iSeMiUJGAeDtR6JkloQCRrFkidIx8gNbDA4+fCl8BGpEkPQRwGHMfGNyPFxf3iYAF/XwgGu4XgQRyt4huoRFdccUVHtAgjYJiY1qmEn1lfUnjIlCRgLJ86TzckBF/kmwgANkkI0ugrUIumMuQEtoOxILJzguDUXf5RBui0ZwNeODm2Lnnnhus11MYZfk+pQqNs3GlOotaIFDRCV2Lg2gfzYMAhaQIuTrnnHOO52jxokBIYsV0PuusszzvB20H5zPOaSJiRMDw45G7hY9RJrTD1tD/6loDaug7U4cXhz+OZEJ8NwQuGHECfw/ZzIyiQikPPiGIhxaptEyFpCjtIeyOT1HSXAhIA2qu+91pV0tphI1M4T15IBZMKLQZyiVI18Dvg5ALRCkPqRskHrLMxlcT+Tg6zfevogbEg0X9DW+yYknqdaQqFyPTHN+t/7ZHSHk+iDom1eh0qqQ5GMEA5p922mnudKaekNQJHNJUvZPGgWNa0rwIVCQgQvBHHnlkoC1msTCP1Hgbp0mV6MXgNPj33XbbzZ3EDH2D/yYRwuYkGSKYVPT5gZgoiSGLedCgQU5M1H7h85E0NwIlCYi3F+UOVJRTCU+GKm+vfKENBmN1E/FQE6h8ZBp/mj49RKp4BiiXQNCCSEolf4e6QToTkL5BhJKSHXw/jN9GnZdECCQIlPQB8eYi45noBW8vKs2Zzv9jHRyNVJ2zXNI8CFx66aVemc4Vk22OgxnCsaFynIh22WUXTxClpovEVEoqCLOTxS4RAvkIlNSAWIGHij96spAkdvrpp+dvp+kmRmDs2LFemwUE5P2QUIhQDkMIHSczPh7IiVILyitUl+cQ6V8RAmUJKFmPrnT8oW4nmg71OXStY34p53SybT1+khiHc72SgEepMpBK29X7csgE7ZcEwWTUCdqekM9DAekSSyzhSYfzzjtvYASVk08+WeRT7ze9E8+/IgFxbBLHiGzQBhP7nocPm5833/DhwwvGau/Ec+2SXV977bWemVvpYAzzSxlIswiES0EpjehwMvMsJAQMaRMJpWh0+umn9wbxEBBClrNECJRDoCIB0Q+IfI0BAwa4FkRDMPxCPIhEMoiCvP/+++X2X3fzCRPzV0l4+/eyeqZGEHosE1BAq6XTAS8XSIVqdeqxyO+BSCipQDCnKKvAvKJwlJ4+9OrBMU2+D8SEZkzDsXJN4xoBN11DxxGoSECkxGPXk7GKEM0g2sEDxw8Q3xA+AUYmkNQPAmgxOI0Z9A8ziWFtCDKQrYxAwvvss0+uIBQnM61u99tvPw+jQz6MVoomCHnRJYHGdFTAU0wKKUFmEiHQGgIlo2D5G5Djg1qN0AaDlHkq5BEeVrQhtUxwOOrmH/eUQlH8NtRukbGMicX9RONF6KnEYIFUo5Pzg18MHyB+PwpKBw8e7A7oPn36hFtuucUJByf08ccf705okU/dPA6pnmhFAqJuh4RDandOOukkTyajix2tFugHTb1PUv2c6pXo4G1CgNyu7t27e4dLRhJFuIdJlAoHM+US9O1BA6IbIaPFco/RkMjzoY8P5hnPA6YW/iACEwzWKBEC1SBQkYCo5SGaQcYz0Q5aKeD/QBVHBWekDEn9IECzNiTJ72IaM5u+yziZMa0ILhBGpxk82i2V7fh8cNCT9UwDOhIM8Qnh4+ElReh9zz33ZHcSIdBmBCr6gNgTD94rr7ziyWY0mkJ42GgiLu3H4aiLf1SqQzaEyikChTQwrZJezAQTkjIKNCXIhzwwtCFKKYj6kVyIFsSYcJAY5jmO52HDhnnGc10AoZPMDAIVNSDOFNufntCUXOAH4uGkhYLIJzP3sU0nAolgRuE0Jis5KbM55JBDfPv7778/F0bH4bzWWmt503j8RGg6OJhJx8DvQ7kOptvuu+/uGpHC7W26BVqpCIE2aUBENzC5KLtAeIviF+ANiCNTTugiVDP6lfA6/h3IhBQKKtGJXmJWcy9ZhpbEH74gCIZ1ISruPy1vqe8i4RASm2+++TJ6pTqtekGgogZEqj3+AKIjqN0J2SQDx/FgSrKNAHk5kAgEgzbLPaQ2iy4HN910k2u3LEOIZJH7Q9oF5EMtFw3FaK163XXXea4QzmuRT7bveb2cXUUNiHoeHJQQELkgPLQIIxhggqGW55dp1MuFN8t54ushNJ74ebhXOI8pNmb+iBEjchXqBBVwLuMLIkyfn9tFKw3McIkQqCUCFTUgIiE8eJBPsfCm5M34jjkhJdlD4Pzzz/cMdrQVmoMxAkUio6zhOxoOI83ieF5ggQX8O/49Ip/55JNso08hUGsEKmpAjFxA3gcqfJKQmJwEfgR8B0kOSTK/qz5b07ySgtJmHcoXLYe2GHQkJHMdUiHrGdOZ4ZG5nwghd2q4MMkgKu63RAh0FQIVNaDVVlvNx3iiIRl9fvEnoBXRlIo/oilEVrpSyEfih4KjlJIQCLJYOC/Mw2YVBvujXxOmFn48SiNWX311z+XihUFuD6YWDuikil3k06xPS3rXXZGASKnHUUnBIj9qVPRtttkmHHPMMf6A0++3K4X6JYiFkRdwjvImZ8hoIjeScQhQLAwJ7b///m5CY35hktG94MUXX/QiUsLulFtgSlO/JRECXY1ARROME0I9pxzjmWeece0HjQe/EH6DrhYqrqlFw4xAhgwZ4o5xeg+Tod2sWg+1W2io1G4xrnrSKoMAArVb9F+GtMmEJpBAFfthhx0WNtxwQ8/16er7qOMJAUfA/CitijkooxWgllyHZebMLLmss2ZaL6JoyXAtdm8/ptitW7doGpIv22STTWLfvn1brFerGaYZRhtOpla769B+zBSOFiSIdkOjdS7wT6Yta92nrZ2Gf5qmE20kimgabLRQfDTS7tBxtXG2ETDFIVqQIdMnWdEEY1QM3pKlJBkVg2rqrhKS4TinYqEwlubnW2yxhWdrFy9vtO/2VHkRKDlaaIEUBxMkoGEcnxQMk3hIDRclF5RQ0ECefs4kEdLjSW12G+2pqL/rKWmCZXlUDPxQ+KBohEb6/+KLL55DnZwXCIjufISdqXlqNCFvh/wd+u/QNCwRCAl/GD47nM/47Ug6pIiYnC3Mr6222ioMHjw47LXXXl5InGyrTyGQFgIlCYjoEtGTW2+91cPsPMjFkS7m8aDjc2G6qwRfBkmRaDz4fPIJiJQABsujf80ll1zSUAREwzCIg+sjIMC15gsZzPh9CBLgUKblBhnPaEOMPIqjHo2IejCSEtNKncg/Z00LAbKYWxWr+8qkr8DyfKIlQZY9d9MQojXKKru8ows62wdkZqb7sKweK1oqRLSXQs63Y4+tT59wwgnRQujRioSj5fNEeyG438eymf3aBw4cGE1bcn+P9WiOSy65ZDSndEcvXdvXCQL14AMqfI2WIORkVIxkEb2BSGazhzuZlconWlpr2bpoAUTvqhU0jbb0uEYLIb+mMwTzieTBs88+21thJCOIEnkkVwethmGNL7zwwmCkEkaOHOmhdPKhMEspIiU9IvGVEWbHR0RrDTQliRDICgIVCaj4RElCpF4o69KzZ093xNLLqBohL+aII46ouAnkQ2V4RwV/G6Us1NX16NEjPPvss04+ONRxKNODm3YZd911l2cy04GQY2NeYfriC8LPQ1dCBgwgA5zcH9qukuVM2xQIjLYZIp+O3i1tX2sEqiagWp9AZ+2PvKB55pmn6t0zfDB/lYQMbMobOiJkIUMaOMwhDHw4VKWj5eBIRxuj+yDLGRgAwsH/Ben07t3bEwrp2YPfh/aolMawzCwEJyic0hCVRAhkFYGGJSD6FGVNIAZ6K9FJkmgWWgvOdMxZllkek58y2gqOdASNDHMLrYbhcQgGYF5S40WBMCUVlFKwD5IOcU4TGKBDIcWmEiGQaQSq9adZyUM0c6DazTptfdMaojVEj6ZBdNoxSu3YmrJHK3cotajkPBIkTSNr4UgmedI0nGg5Ve5MNh9btObuuX2YHyjiVMaBzDHtYfI/HM6W0xMttO4JmGZqRevhE82ky22rieZGoB6c0CWjYPygrelU5MfdmowePTpefPHFra3SKctMi4jmF4mW2xLtjZ/7UZofJQK6VXfH7777rlOOney0GgIiGzUhDs6Rc7fK89w8C4lHSxKMkI+VTfg1WfJgcqhoyYa5dS3XKZrZFiEm68sdzfEczSeUW1cTQiBBoB4IqKQJRrU5ox+QZXvFFVfkxgAvVuXwNzCSwvbbb1+8qNO+0xCd/CP8IVZqEeacc06PFPGdjOwxY8b4AHq0jyU6hO8kTbGHwavQcTITiSK6BW6MGkoyJd0Fcezjv8HXQ/sQhrfB7GI9MpoZiw0HMo5pHMtcK0mWiZmW5vXp2EKgQwgkbJn/OXToUM87IdfFCk6jOT7zF+emrS+0v5lzM7pggrc+5kdrpgYagbWeiBbN6rQzaqsGZIQZzRfjOJlz2c/HomfRkih9HiYY5pX5dqKlPLgZZn18InV2t99+ezR/kZtYmFtWgButz0+nXZN23FgI1IMGVDYphBEwGIyQ7FlygZLq8w6xXQ02poNf//79W3Ww4sxFK0vznAmH0y+JvClGHMUhTPdIIltoQ0n7EKJeaEaUUKCtsRzcyeRGO6LKHS2UzgNE3ahilwiBRkGgLAFxgaj5FJwyegLNyQkbpy2En0s1ICs+L5Lw0io3IEkRAseEGjBggEeuIB1yfohgsRwSpUjU3rlugpnPKvBHEiTmLz176OHDkDhcM8mExeUwxdes70Kg3hAo6QPKvwiqz3kjMxAhoV40EDJw02p1SjEqP0hajvbr18+1Bnwn+EjwAZHUh9ZA/gwN9btSIBx68lBDh8aDlkPBKJnLhMgRcnMIldPTiORChAJafEBcA/4dfD1WOuHrUeuWFtZ+cvonBDoRgVY1oOS4vHnppsdQLTh3GZiOUTLTEEZrYHBEsoHJd4GM6GVM0iElCGT90mSdPBmS+bpKwIXkRAgbs5VkRjRHTDE0GUokKB1B+0ES8qHlLcPdJM5lnOjk/jACLfsT+XTVHdRx0kCgogaUf1K77rqrJ77R3sEag6U2FC+lIES4ICGIEK0HTYMfPz9cNKKuFDQftBgiW2QeDx482CvQIUN6aTPcDZE72mHQsZDIISTD+omWBlHRuZDroHIdn5BECDQ6AlUREGCgcdCaFRJimN40Bc0MMuIvTcF8whyEbHA4o+Wg7Tz00EPBOjO62Tp27FivMaMVBs5x2p1Q54XJhXmGVkcJBtoc8yRCoBkQKGmCMUxLaxXhiV+IIklGW2h2wWGM34nqdXBjmkJVC4M6NBAMTmn68uy4446u/dCPGcHJT0kG5hYmm8jHYdG/ZkGgsTIfuu5qkjwg03ai+XiiJRgWHNyc0Z7nQ58eejFbpbtnOycrkc9DXo9pPtFC8clsfQqBmiFQ13lAzULAHb1OK1vxiBeFogx5kwiRLPowY44RucMcw5HPd8wt/D2kOVBMigNaIgSaEYGqfUDNCFJr15yQB318IBR8QTQOg2AYl4soFiUXRMJIMsR/hjlG9Cupfm9t/1omBBoZARFQB+8uOT74xPDjEJGzNrBeu8UopGQuX3DBBU5CjERBiB2/UFoJkh28VG0uBGqOgAioBpDifKZNLdEwEjZpLIbDmdwfCk0xv9B2ICRayUqEgBD4CwERUDufBMLtDG2MSYUw2iiZ4uT6IOQiEU1kOT4fiKizhVwissHT0rDwh0GwlJ2kIbSwJZUhjdazP/zwg0c+0YbTENI80K6JpCbSleP1Jces9nM8XO7VbqT1g9d5UTBaPDwO2eLk8vBDJKROsmRXQcyPABLgR5iGkG5AIiY+rjTk5Zdf9qLdNAiIOj5+8Iy/loaQ/sFzR81gIr169fJOmomfMpmfqc+axfy0I0fAfELeoTENOCw73IfwSePYHJOmahbpS+vwng5h/bFTOb4llXpDuVQObge1SGu0/LO0Dt/u45ZMRMwUQ+pkhIAQaFgEREANe2t1YUIg+wiIgLJ/j3SGQqBhERABNeyt1YUJgewjIALK/j3SGQqBhkVABNSwt1YXJgSyj4AIKPv3SGcoBBoWARFQw95aXZgQyD4CyoSu8T165ZVXPCM1jexTMqFp1s9gjWkImdBU/0833XRpHD689NJL3okgjaZuZELb8OCB7OM0hExoG2suTDPNNGkcvt3HFAG1GzptKASEQEcRkAnWUQS1vRAQAu1GQATUbui0oRAQAh1FQATUUQS1vRAQAu1GQATUbui0oRAQAh1FQATUUQS1vRAQAu1GQATUbui0oRAQAh1FQATUUQS1vRAQAu1GQATUbui0oRAQAh1FQATUUQS1vRAQAu1GQATUbui0oRAQAh1FQATUDgStA3c7tgpdNjpGu06uio3ae/1VHCKzq7bn2hknTlIaARFQaVxKzmW4ZYZeZtgZCj6HDBlScr38mTZKg48XNs8883iR5mabbeZFi/nr1MN0R6+DQtm555477LXXXvVwuS3O8dJLLw2rrLKKDzu0zDLL+JhwLVYqmnH33XeHxRZbLEw88cSBEXT33XffAA6SPATaPZ5Gk21oD0400vHhT4yIoo0JFm0MrHj00Ue3isTee+8d7YcXGTLHRkiN9kDGRRddNNpbsdXtsrawo9dhxIPaGG3k2KxdWsXzeeCBB+JEE00Uhw0bFp9//vloI95GG/fNp8ttbF0RohFP3GSTTeLDDz8cbfTcaAM2xgEDBpTbpCnnYxZI2oDAEUcc4Q+QjT6aWxvy6d69e/z5559z8/InXnjhhWiD5MWbb745N9vGkPcf4ogRI3Lzsj7R0eu47777oo0UG23U0LokoAUWWCCa5ltwmxZaaKG44447FszL/3Lcccc5AX3++ee52ZDw5JNPHv/444/cvGafkAmWpw22Nok6vc466xSM7b7RRhsFe8DCU089VXJT03qCvTnDuuuum1vO0LnzzjtvuOOOO3Lzsj7RkevAdLMfajjppJPcBE2jV09H8P3ggw+CvTTCpptuWrCbjTfeuNV7yNDcv/32W/jxxx9z2/3+++9hiimm8BFzczObfEIE1MYH4K233gqzzjprwdrJGOyMy11KGA8e2x8SyhfGD6dxWL1IR67j4IMP9gZt2223Xb1cbsF5ct+R5F4nC7mHn332WSjnYN5www1Dz549g40WG+69995wyimnBBu51H1g9UbCyTV3xueEnbHTRtznt99+26LTX9J9jvHYSwld8kp1B8SJXU8E1N7r4IfHj+7FF18sBU9dzOO+I2g0+cI9NFPKAwq8ZIplpplmCtdcc03o06dPQHtG1l9//TBo0KDiVZv6uzSgNt7+CSecMBS3WeVNxt8vv/xSci+sbz6gFsvY5tdff20xP6sz2nMd/HDN4RqOP/74MPvss2f10iqeF/cdKb6Pyfdy9/HWW28Nq666qkdNH3300XDGGWd4y9j11lvPiavigZtkBWlAbbzRM844Y/jqq68K1v766689t8eiGwXzky+8BS2CknzNfbJduW1yK2Vooj3XMXDgQCfsJZZYIjz++ON+NfhDMFf5vvjii3t4OkOXWfJUuO9I8b1PvtOHuZScddZZnnZg0VJfvPzyywdw3GKLLdxnuNxyy5XarOnmtXw9Nx0EbbtgHp5isyn5Psccc5TcCQ8vTupiPwHb9UqpeXnJE60wsz3X8fTTT4cxY8aE3r17B358/I0ePTpcf/31Pl3Ob1bhVLp8cUJAyb1OToDvmNflXiQWeg8Wgk9W988NNtggdOvWLTz44IMF85v5iwiojXcfdfquu+4qIBMLpQcLq4Yll1yy5F7YhiiQ5f/klr/77rvh5ZdfDiuvvHJuXtYn2nMd1157rV8n15r8kYi49dZb+3ecuPUgvHiIXHKv84UoZmv3EKf1G2+8kb9JePLJJz0yxj4l/x+BZs9DaOv1Wzg2mj8gHnTQQdGcsvGxxx6LPXr0iEOHDs3twt7wnmhGwmEi9pBGI6ho2kA0Z3W0kHw0baDuEhHbch2HHHJItGhPcuktPsmdIRem3uTMM8/0/J3hw4dHMyP9GklENILJXUrxtYOD+fo8edH8YXHUqFHRtMFoxBTNfMtt1+wTSkSs4gm45ZZbPKGOB8vU77jLLrtEy+3I7eGJJ57wJMMLLrggN880nmj2vs839Tuuueaa0TSC3PJ6mWjLdVjYOa699tplL6leCcjyeaKVUfgLiHtPYiKZ8PlSfO0kG5KoauOkORHZ+z4utdRSkaROyTgENC5YlbqwQRfeeeedMNtss4UkQtKWXZAzQjSpVFi+LdtnZZ1GuY724GkZ74GUC/J72iqE6vGFcd/r/d639ZqrWU8EVA1aWlcICIGaIiAndE3h1M6EgBCoBgERUDVoaV0hIARqioAIqKZwamdCQAhUg4AIqBq0tK4QEAI1RUAEVFM4tTMhIASqQUAEVA1aWlcICIGaIiACqimc2pkQEALVICACqgYtrSsEhEBNERAB1RRO7UwICIFqEBABVYOW1hUCQqCmCIiAagqndiYEhEA1CIiAqkFL6woBIVBTBERANYVTOxMCQqAaBERA1aCldYWAEKgpAiKgmsKpnQkBIVANAiKgatDSukJACNQUARFQTeHUzoSAEKgGARFQNWhpXSEgBGqKgAiopnBqZ0JACFSDgAioGrS0rhAQAjVFQARUUzi1MyEgBKpBQARUDVpaVwgIgZoiIAKqKZzamRAQAtUgIAKqBi2tKwSEQE0REAHVFM763pkNQRzefvvt8N1339X3hejs6wYBEVAd3Kovvvgi2Jjk4dRTTy15tnvuuWfVw/7auPZhySWXzO3v8ssvD1NPPXWYe+65w6BBg3LzNfEXAo8//nh4+OGHc3Dk43fLLbf4/Rk7dmxuuSbahsCEbVtNazUaAn369AmzzDJL7rKOOeaYsNRSS4XzzjsvzDDDDLn5mgjh999/D7179w4XXXRRWGGFFRySYvyEU/sQEAG1D7e632q77bYruIZPPvkkMG/++ecvmK8vIcQY/S8fi2L88pdpuu0IyARrO1Z1s+aQIUPcjLrqqqvC4osvHqaddtqw7rrrhnfffTd3Dccee2zYdtttw5tvvumaz/fffx/OPvtsn/722299PUyOlVde2U2zeeaZJwwcODD8+uuvuX2gDdx6661h+eWXd9NtxIgRgWMffvjh4eKLLw6LLLJImHnmmcPee+/tP+Bhw4Y5wS200ELhlFNOye2n3MQdd9wR1lprLTcvN9xwQzeB0NK++uor34TjXnPNNQWbH3bYYWHXXXfNzeN8Dz30UD+XySefPMw777xhv/32Cz/++GNuHa7x7rvv9vOcbbbZAn8HHXRQwCfGesstt5yve9RRRzlJ8yXBL7eToomXXnopd+5gx3mxP0khAtKACvFoiG8QDWQwwQQThB122MEJ5Oijjw59+/YNTz75pF8j67zyyiuhe/fuYa+99gp77LFHwKxYZ511wsQTTxyee+65sMoqqzhxXXLJJU5eRx55ZHj55ZfD8OHDfR+sw3a9evUK8803X5hpppl8vdtvvz1MNdVU/oN+8cUXw5lnnhleffXV8MEHH4TddtvNj3vAAQeEVVddNSy22GIlMX/++efDFltsEfr37+8Egp9lk002CfjDMImQZ599Nnz66acF248ZMybk+2LYfuTIkU4oc801l+Ny2mmnhWmmmSYMHjzYt+VYAwYMCD179nSi4LpOOumkMOOMMzpZcY077bRTWH311f0c2CjBz3dQ9O+1114LyyyzTFhggQXC0KFDwy+//OKkzDZXXnll0dpN/tXUS0nGEfj888+jPabRtIaSZ2o/kGhaTm6Z/ZiikU984403cvPsh+D7MO3B5+28885xiSWWyC03wognnnhi7rtpBb78zz//zM27+eabfR/2g/Z5k002WTQCiX/88UduHY7NuRq55ebNMcccPu+tt97KzTMtI5q2lPtePGGaTzRCLJi96aab+n6MdHz+RBNNFE8//fSCdbbccstoxOnzfvjhh2jaVjTNq2CdRRddNK655pq5eVy7OeRj/rUuu+yycY011vB1TIvy45pWl9smH78El48//tiXG3HG6aabLv7000+59a+77jrfh5Fbbp4mYpQJ1qAvoFlnnTWg+ieC6YEk5lUyv9Sn/TDCU089Ffr16+fRnWSdjTfe2DWbRx55JJkVVlxxxTD++IWPEU5s3v6JLLzwwm76oIEkggMc86+coJVwvHzZeuut879WnDaCDGhgaDBcE9rRTTfdFIxogpFTwfZoY0QaEwG7tmCVrJ//+cADD4SVVlrJtcVnnnkm8Acm4PToo4/mr9r00zLB6uARmHTSSf0sf/7555Jnyw8FUypfir9jViGmreSvVnIahzS+j/woWbIi8zClEsFfUizF22EKYqblC/PKyTfffOOmVY8ePQpWKXWsghVKfIFI8UlBmpAORMy1TTHFFAVrTz/99AXfJ5lkEieqgplt+MK+P/vss2Bakf8Vb4IZJhmHQOGra9x8TWUIAd7k/CAghlKCz2POOecsWJT/Ni9Y0IYvOK3ZPnH25m/y5ZdfFhxrwglbvsNaI5f8fZWbnnLKKd0PxbHyBUd5seQ7xVnGNmg7CLjgxCax8oILLggfffRReP31190x7yvk/esIXnm7CbwsuFf777+/Ex6kl/9HuoNkHAIioHFYZHpq6aWX9ogT2kG+8LYlWpVv3uQvb8802hL7GzVqVMHmOK0hQaJbnSmYKkTKHnzwwYLDPPbYYwXf0WLySQrTCoJJBFPo66+/dvIx35A7yVkHR3pbNMFkPwk5sW0lYV1SGdCAeHEkf5Ah54CDWzIOARHQOCwyPXXCCScEc3KGDTbYIJC1/MQTT4Srr746mKPUw+yEmmsphI3NceqhecwKc2h7RA1/DtGyzhbMJn7E5557rmswpAgQmcoXUgzQbMDinXfeCWSEg1EihM8hs2uvvTZgvrKMDObRo0cXhOGT9ct9ouVByhDyCy+8UG613Hyww9/E+VDaQlSMKBvTnLNkHAIioHFYZHqKTFx+SOSSWATGc1N23333gLOZXBw+aynbb799sKiY5/6gaVjkyEPX99xzjzuia3msUvsi5E74nnwcQvpHHHGEaxD565JLZNEmx4ISErQdcnwSjWX22Wf3UDskRZkJfijMI4gMQi1lYubvP38arCF8i57lzy45TbrDWWed5etzXhZtDOQgXXbZZaFbt24lt2nWmeMRCmzWi6/X64aE3nvvvWDh7RYRqFpfE2YHjlMSChNHdq2P0dr+MJW4VsgEjWjzzTd3B3W+0/jDDz90gil2LCf75RFHQ4KkO0IAFlZ3xzRk0hbhuO+//37gXJNAQlu2a6Z1REDNdLfr/FpvvPHGkgRU55fV1KcvE6ypb78uXgiki4A0oHTx19GrQIB8J8zBBRdc0MtMqthUq2YUARFQRm+MTksINAMCMsGa4S7rGoVARhEQAWX0xui0hEAzICACaoa7rGsUAhlFQASU0Ruj0xICzYCACKgZ7rKuUQhkFAERUEZvjE5LCDQDAiKgZrjLukYhkFEEREAZvTE6LSHQDAiIgJrhLusahUBGERABZfTG6LSEQDMgIAJqhrusaxQCGUVABJTRG6PTEgLNgIAIqBnusq5RCGQUARFQRm+MTksINAMCIqBmuMu6RiGQUQREQBm9MTotIdAMCIiAmuEu6xqFQEYREAFl9MbotIRAMyAgAmqGu6xrFAIZReD/AQI58QVAefeGAAAAAElFTkSuQmCC" /><!-- --></p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">qqplot</span>(<span class="fu">runif</span>(<span class="fu">length</span>(pLRT)), pLRT, <span class="at">xlab =</span> <span class="st">&quot;Uniform quantile&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;LRT p-value&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">&quot;gray&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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aAlWPlaZOfPUU0/1ZdSNN94YOnbsGOaZZ56w9dZbh8mTJ+f6cPrpp4d99tknvPnmmy75fP/99+HSSy/17W+//dbPY8mx8cYb+9Js2WWXDccff3z49ddfc/dAGrjrrrtC586dfel23333BZ49YMCAcPXVV4dVV101LLzwwuGII47wH/DQoUOdwa288sph8ODBufs0tjFq1KiwxRZb+PKyW7duvgRCSpsyZYpfwnNHjBhRcHm/fv3CoYcemjtGe/v27ettmW222cJyyy0XjjzyyPDjjz/mzqGPo0eP9nYutthigU+fPn0COjHOW3fddf3cU045xZk0OzF+uZs02JgwYUKu7WBHu7ifqBABSUCFeNTEHowGZjD99NOHAw44wBnIoEGDwm677RbGjRvnfeScV155Jcw///zh8MMPD7169QosK7baaqsw00wzhRdeeCF06dLFGdfw4cOdeZ188slh4sSJ4Z577vF7cA7XtW/fPnTo0CG0a9fOz7v33nvDnHPO6T/ol19+OQwZMiS8+uqr4YMPPgg9e/b05x599NFhk002CauvvnpRzF988cWw6667hn333dcZCHqWHXfcMaAPY0kEPf/88+Gzzz4ruP6dd94J+boYrn/ooYecoSy99NKOy4UXXhjmnnvuMHDgQL+WZ/Xo0SMsvvjizijo13nnnRfatm3rzIo+HnTQQWGzzTbzNnBRjJ/foMGf1157LXTq1CmssMIK4dxzzw2//PKLM2WuueGGGxqcXee7Jl6KUo7AF198Edk0jUxqKNpS+4FEJuXkvrMfU2TMJ3rjjTdyx+yH4Pcw6cGPHXzwwdEaa6yR+94YRnTOOefk9k0q8O//+OOP3LE77rjD72E/aD8266yzRsZAot9//z13Ds+mrcbccseWXHJJP/bWW2/ljpmUEZm0lNtvuGGST2QMseDwTjvt5PcxpuPH//a3v0UXXXRRwTl77LFHZIzTj/3www+RSVuRSV4F56y22mpR165dc8fouynko/y+rrPOOtHmm2/u55gU5c81qS53TT5+MS4ff/yxf2+MM5p33nmjn376KXf+Lbfc4vcw5pY7po0o0hKsRl9Aiy66aED0j4mlBxQvr+Ljxf7bDyOMHz8+dO/e3a078Tk77LCDSzZPPvlkfChsuOGGYbrpCqcRSmze/jGtssoqvvRBAokJBTjLv8YIqYTn5dNee+2Vv1ty2xhkQAJDgqFPSEe33357MEYTjDkVXI80hqUxJrArB6v4/Pz/jz76aNhoo41cWnzuuecCHzABp6eeeir/1Lrf1hIsA1Nglllm8Vb+/PPPRVvLD4WlVD413GdZBZm0kn9a0W0U0ug+8q1k8YkcYykVE/qShtTwOpaCLNPyiWON0TfffONLq4UWWqjglGLPKjihyA6MFJ0UTBOmAyOmb7PPPnvB2QsssEDB/swzz+yMquBgGTvc+/PPPw8mFfmn4SUsw0R/IVD46vrruLZShABvcn4QMIZihM5jqaWWKvgq/21e8EUZOyituT5W9uZf8tVXXxU8a4YZpn6HNcVc8u/V2PYcc8zheiielU8oyhtSvlKc77gGaQcCF5TYOFYOGzYsfPTRR+H11193xbyfkPdnWvDKu03gZcFYHXXUUc7wYHr5H9wdRH8hIAb0Fxap3lp77bXd4oR0kE+8bbFW5S9v8r+vZBtpifuNGTOm4HKU1jBBrFutSSxVsJQ99thjBY95+umnC/aRYvKZFEsrGExMLIW+/vprZz6mG3IlOeegSC9HEozvEzMnri1FnIsrAxIQL474AzOkDSi4RX8hIAb0Fxap3jrrrLOCKTnDdtttF/BafuaZZ8JNN90UTFHqZnZMzS1JmI1NceqmeZYVptB2ixr6HKxlrU0sm/gRX3bZZS7B4CKAZSqfcDFAsgGLd999N+ARDkYxYT6HmY0cOTKwfOU7PJgnTZpUYIaPz2/sP1IeTBmG/NJLLzV2Wu442KFvoj2EtmAVw8rGNm0W/YWAGNBfWKR6C09cfkj4kpgFxn1TDjvssICyGV8c/rck7b///sGsYu77g6RhliM3XT/44IOuiG7JZxW7FyZ3zPf442DSP+mkk1yCyD8XXyKzNjkWhJAg7eDjE0ssSyyxhJvaYVKEmaCHYnkEI4OhFlti5t8/fxusYfhmPcs/XHQbd4dLLrnEz6ddZm0M+CBde+21YcYZZyx6Tb0ebIMpsF47n9V+w4Tee++9YObtqSxQLd0nlh0oTnEojBXZLf2Mpu7HUom+wkyQiHbZZRdXUOcrjT/88ENnMA0Vy/F9meJISDDpaWEAZlZ3xTTMpBziue+//36grbEhoZzr6ukcMaB6Gu2M9/W2224ryoAy3q26br6WYHU9/Oq8EEgWAUlAyeKvpzcDAfydWA6uuOKKHmbSjEt1akoREANK6cCoWUKgHhDQEqweRll9FAIpRUAMKKUDo2YJgXpAQAyoHkZZfRQCKUVADCilA6NmCYF6QEAMqB5GWX0UAilFQAwopQOjZgmBekBADKgeRll9FAIpRUAMKKUDo2YJgXpAQAyoHkZZfRQCKUVADCilA6NmCYF6QEAMqB5GWX0UAilFQAwopQOjZgmBekBADKgeRll9FAIpRUAMKKUDo2YJgXpAQAyoHkZZfRQCKUVADCilA6NmCYF6QEAMqB5GWX0UAilFQAwopQOjZgmBekBADKgeRll9FAIpReD/AWRLgvO69elIAAAAAElFTkSuQmCC" /><!-- --></p>
 </div>
-<div id="exploring-lmm-fit-and-the-de-genes" class="section level3" number="2.2.4">
-<h3><span class="header-section-number">2.2.4</span> Exploring LMM fit
-and the DE genes</h3>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="do">##(1) Check the genes for which LMM fitting converges.</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>gc <span class="ot">&lt;-</span> (<span class="fu">apply</span>(<span class="fu">abs</span>(fit<span class="sc">$</span>dlogL), <span class="dv">2</span>, max) <span class="sc">&lt;</span> epsilon) </span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">sum</span>(gc) </span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="do">##(2) Hypothesis testing for variance components:</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="do">##    H0, theta &lt;/= 0 vs H1, theta &gt; 0.</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>z <span class="ot">&lt;-</span> fit<span class="sc">$</span>theta[<span class="st">&quot;var1&quot;</span>, ]<span class="sc">/</span>fit<span class="sc">$</span>se.theta[<span class="st">&quot;var1&quot;</span>, ]</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(z, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="fu">sum</span>(p <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="do">##(3) The DE genes specific to a cell-type</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values for the genes specific to a cell-type.</span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>ce <span class="ot">&lt;-</span> fit<span class="sc">$</span>coef[index, gc]</span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>tv <span class="ot">&lt;-</span> fit<span class="sc">$</span>t[index, gc]</span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>pv <span class="ot">&lt;-</span> fit<span class="sc">$</span>p[index, gc]</span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>    <span class="at">gene =</span> <span class="fu">rep</span>(<span class="fu">colnames</span>(ce), <span class="fu">nrow</span>(ce)), </span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>    <span class="at">cluster =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(ce), <span class="at">each =</span> <span class="fu">ncol</span>(ce)),</span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>    <span class="at">coef =</span> <span class="fu">c</span>(<span class="fu">t</span>(ce)), <span class="at">t =</span> <span class="fu">c</span>(<span class="fu">t</span>(tv)), <span class="at">p =</span> <span class="fu">c</span>(<span class="fu">t</span>(pv)))</span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a></span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="do">##Adjust p-values by FDR.</span></span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>out<span class="sc">$</span>FDR <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(out<span class="sc">$</span>p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>)</span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a></span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="do">##The DE genes with FDR &lt; 0.05 and abs(logFC) &gt; 0.5</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;      gene    cluster       coef         t            p          FDR</span></span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt; 1 Gene456  cls4:trtB  0.6159160 10.144524 3.600651e-24 3.600651e-21</span></span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt; 2 Gene201  cls1:trtB  0.7149779  8.625628 6.465361e-18 3.232680e-15</span></span>
-<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt; 3 Gene864 cls10:trtB  0.8716965  7.992823 1.332776e-15 4.442588e-13</span></span>
-<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt; 4 Gene597  cls2:trtB  0.7638176  7.737909 1.020050e-14 2.550125e-12</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; 5 Gene982  cls8:trtB  0.9979503  7.288876 3.148478e-13 6.296956e-11</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; 6 Gene499  cls8:trtB -0.6079898 -5.757651 8.554122e-09 1.425687e-06</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; 7 Gene699  cls7:trtB -0.5373567 -4.919868 8.674004e-07 1.239143e-04</span></span>
-<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a><span class="co">#&gt; 8 Gene632  cls4:trtB -0.5355741 -4.810256 1.509563e-06 1.886953e-04</span></span>
-<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="co">#&gt; 9 Gene378  cls9:trtB -0.6419090 -4.427605 9.538617e-06 1.059846e-03</span></span>
-<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a></span>
-<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a><span class="do">##The true DE genes</span></span>
-<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a><span class="co">#dat$DEgenes</span></span></code></pre></div>
-</div>
-<div id="using-ml-method" class="section level3" number="2.2.5">
-<h3><span class="header-section-number">2.2.5</span> Using ML
+<div id="using-ml-method" class="section level3" number="2.2.4">
+<h3><span class="header-section-number">2.2.4</span> Using ML
 method</h3>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="do">##Fitting LMM by ML method</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#fit &lt;- lmmfit(Y, X, Z, d = d, method = &quot;ML&quot;, max.iter = max.iter, epsilon = epsilon)</span></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, <span class="at">method =</span> <span class="st">&quot;ML&quot;</span>,</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="do">##The DE genes specific to a cell-type</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit<span class="sc">$</span>coef))</span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>ce <span class="ot">&lt;-</span> fit<span class="sc">$</span>coef[index, gc]</span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>tv <span class="ot">&lt;-</span> fit<span class="sc">$</span>t[index, gc]</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>pv <span class="ot">&lt;-</span> fit<span class="sc">$</span>p[index, gc]</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    <span class="at">gene =</span> <span class="fu">rep</span>(<span class="fu">colnames</span>(ce), <span class="fu">nrow</span>(ce)), </span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>    <span class="at">cluster =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(ce), <span class="at">each =</span> <span class="fu">ncol</span>(ce)),</span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>    <span class="at">coef =</span> <span class="fu">c</span>(<span class="fu">t</span>(ce)), <span class="at">t =</span> <span class="fu">c</span>(<span class="fu">t</span>(tv)), <span class="at">p =</span> <span class="fu">c</span>(<span class="fu">t</span>(pv)))</span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="do">##Adjusting p-values by FDR</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>out<span class="sc">$</span>FDR <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(out<span class="sc">$</span>p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>)</span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="do">##The DE genes with FDR &lt; 0.05 and abs(logFC) &gt; 0.5</span></span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;      gene    cluster       coef         t            p          FDR</span></span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; 1 Gene456  cls4:trtB  0.6159049 10.542755 5.661896e-26 5.661896e-23</span></span>
-<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; 2 Gene201  cls1:trtB  0.7149782  8.979640 2.762145e-19 1.381073e-16</span></span>
-<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; 3 Gene864 cls10:trtB  0.8717021  8.322877 8.691959e-17 2.897320e-14</span></span>
-<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt; 4 Gene597  cls2:trtB  0.7638143  8.058659 7.797845e-16 1.949461e-13</span></span>
-<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; 5 Gene982  cls8:trtB  0.9979550  7.589598 3.236647e-14 6.473295e-12</span></span>
-<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; 6 Gene499  cls8:trtB -0.6079984 -5.993079 2.066072e-09 3.443453e-07</span></span>
-<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt; 7 Gene699  cls7:trtB -0.5373524 -5.121801 3.031907e-07 4.331296e-05</span></span>
-<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt; 8 Gene632  cls4:trtB -0.5355670 -5.009191 5.475210e-07 6.844013e-05</span></span>
-<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt; 9 Gene378  cls9:trtB -0.6419070 -4.612034 3.992413e-06 4.436014e-04</span></span>
-<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a></span>
-<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt; R version 4.4.3 (2025-02-28)</span></span>
-<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
-<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
-<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
-<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
-<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
-<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
-<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
-<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
-<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
-<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
-<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
-<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
-<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt; [1] FLASHMM_1.2.1</span></span>
-<span id="cb10-59"><a href="#cb10-59" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-60"><a href="#cb10-60" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span id="cb10-61"><a href="#cb10-61" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.37     R6_2.6.1          fastmap_1.2.0     Matrix_1.7-3     </span></span>
-<span id="cb10-62"><a href="#cb10-62" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.51         lattice_0.22-6    cachem_1.1.0      knitr_1.50       </span></span>
-<span id="cb10-63"><a href="#cb10-63" tabindex="-1"></a><span class="co">#&gt;  [9] htmltools_0.5.8.1 rmarkdown_2.29    lifecycle_1.0.4   cli_3.6.4        </span></span>
-<span id="cb10-64"><a href="#cb10-64" tabindex="-1"></a><span class="co">#&gt; [13] grid_4.4.3        sass_0.4.9        jquerylib_0.1.4   compiler_4.4.3   </span></span>
-<span id="cb10-65"><a href="#cb10-65" tabindex="-1"></a><span class="co">#&gt; [17] rstudioapi_0.17.1 tools_4.4.3       evaluate_1.0.3    bslib_0.9.0      </span></span>
-<span id="cb10-66"><a href="#cb10-66" tabindex="-1"></a><span class="co">#&gt; [21] yaml_2.3.10       rlang_1.1.5       jsonlite_1.9.1    MASS_7.3-65</span></span></code></pre></div>
+<p>To use the maximum likelihood (ML) method to fit the LMM, set method
+= ‘ML’ in the <em>lmm</em> and <em>lmmfit</em> functions.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="do">##Fitting LMM using ML method</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#fit3 &lt;- lmmfit(Y, X, Z, d = d, method = &quot;ML&quot;, max.iter = max.iter, epsilon = epsilon)</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">lmm</span>(XX, XY, ZX, ZY, ZZ, <span class="at">Ynorm =</span> Ynorm, <span class="at">n =</span> n, <span class="at">d =</span> d, <span class="at">method =</span> <span class="st">&quot;ML&quot;</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>             <span class="at">max.iter =</span> max.iter, <span class="at">epsilon =</span> epsilon)</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="do">##The DE genes specific to a cell-type</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="do">##Coefficients, t-values, and p-values</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>index <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;:&quot;</span>, <span class="fu">rownames</span>(fit3<span class="sc">$</span>coef))</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>ce <span class="ot">&lt;-</span> fit3<span class="sc">$</span>coef[index, ]</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>tv <span class="ot">&lt;-</span> fit3<span class="sc">$</span>t[index, ]</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>pv <span class="ot">&lt;-</span> fit3<span class="sc">$</span>p[index, ]</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>    <span class="at">gene =</span> <span class="fu">rep</span>(<span class="fu">colnames</span>(ce), <span class="fu">nrow</span>(ce)), </span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a>    <span class="at">cluster =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(ce), <span class="at">each =</span> <span class="fu">ncol</span>(ce)),</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a>    <span class="at">coef =</span> <span class="fu">c</span>(<span class="fu">t</span>(ce)), <span class="at">t =</span> <span class="fu">c</span>(<span class="fu">t</span>(tv)), <span class="at">p =</span> <span class="fu">c</span>(<span class="fu">t</span>(pv)))</span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="do">##The DE genes with FDR &lt; 0.05 and abs(logFC) &gt; 0.5</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a>out<span class="sc">$</span>FDR <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(out<span class="sc">$</span>p, <span class="at">method =</span> <span class="st">&quot;fdr&quot;</span>) <span class="co">#FDR</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>out <span class="ot">&lt;-</span> out[<span class="fu">order</span>(out<span class="sc">$</span>p), ]</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a>out[(out<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">&amp;</span> (<span class="fu">abs</span>(out<span class="sc">$</span>coef) <span class="sc">&gt;</span> <span class="fl">0.5</span>) , ]</span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt;     gene    cluster       coef         t            p          FDR</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; 1 Gene94  cls2:trtB  0.9623788  9.772953 1.505634e-22 1.505634e-19</span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt; 2 Gene97  cls3:trtB -0.7280336 -8.373840 5.647997e-17 2.823999e-14</span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; 3 Gene92 cls10:trtB -0.7872121 -7.855767 4.012553e-15 1.337518e-12</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt; 4 Gene96  cls3:trtB  0.7869033  7.467752 8.223598e-14 2.055899e-11</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt; 5 Gene98  cls5:trtB -0.7950228 -6.801863 1.038529e-11 2.077058e-09</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt; 6 Gene99  cls6:trtB  0.8171705  6.749672 1.489838e-11 2.483064e-09</span></span></code></pre></div>
 </div>
 </div>
 </div>
-<div id="remarks" class="section level1" number="3">
-<h1><span class="header-section-number">3</span> Remarks</h1>
+<div id="methods" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Methods</h1>
+<div id="lmm-parameter-estimation" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> LMM parameter
+estimation</h2>
+<p><span class="citation">Hartley and Rao (<a href="#ref-HartleyRao1967">1967</a>)</span> developed the maximum
+likelihood (ML) method for estimating the LMM parameters (fixed effects
+and variance components). <span class="citation">Patterson and Thompson
+(<a href="#ref-PattersonThompson1971">1971</a>)</span> proposed a
+modified maximum likelihood procedure, known as restricted maximum
+likelihood (REML), which partitions the data into two mutually
+uncorrelated parts, one being free of the fixed effects used for
+estimating variance components. The REML estimator is unbiased, whereas
+the ML estimator of variance components is generally biased. With
+variance components, <span class="math inline">\(\theta\)</span>,
+estimated, the fixed effects estimated by either ML or REML are given as
+follows <span class="math display">\[
+\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
+\]</span> with covariance matrix <span class="math display">\[var(\hat\beta) =
+(X^TV_{\theta}^{-1}X)^{-1},\]</span> where <span class="math inline">\(\theta = (\theta_0, \theta_1,\ldots,
+\theta_K)\)</span>, <span class="math inline">\(\theta_0 =
+\sigma^2\)</span>, <span class="math inline">\(\theta_k =
+\sigma^2_k\)</span>, and <span class="math display">\[V_{\theta} =
+\theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K
+Z_KZ_K^T.\]</span></p>
+<p>Estimating the variance components by either ML or REML is a
+numerical optimization problem. Various iterative methods based on log
+likelihood, called gradient methods, have been proposed <span class="citation">(<a href="#ref-Searle2006">Searle, Casella, and
+McCulloch 2006</a>)</span>. The gradient methods are represented by the
+iteration equation <span class="math display">\[\begin{equation}\label{eq:gradient}
+\theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial
+l(\theta^{(i)})}{\partial\theta},
+\end{equation}\]</span> where <span class="math inline">\(\partial
+l(\theta)/\partial\theta\)</span> is the gradient of the log likelihood
+function, and <span class="math inline">\(\Gamma(\theta)\)</span> is a
+modifier matrix of the gradient direction, which can be specified by
+Newton–Raphson, Fisher scoring or average information. The
+Newton-Raphson method uses the inverse of the negative Hessian matrix
+(observed Fisher information) as a modifier, while the Fisher scoring
+method uses the inverse of Fisher information matrix (the expectation of
+negative Hessian matrix). The average information method uses the
+inverse of the average of the negative Hessian matrix and its
+expectation. The Fisher scoring method is more stable than others
+because the negative Hessian matrix may not be positive definite but its
+expectation is positive definite.</p>
+</div>
+<div id="hypothesis-testing-1" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Hypothesis
+testing</h2>
+<p>The hypotheses for testing fixed effects and variance components can
+be respectively defined as <span class="math display">\[
+H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
+\]</span> <span class="math display">\[
+H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k &gt; 0,
+\]</span> where <span class="math inline">\(\theta_k\)</span>, <span class="math inline">\(k=1, \ldots, K\)</span>, represent the parameters
+of variance components <span class="math inline">\(\sigma^2_k\)</span>
+but are allowed to be negative. The lower boundary of the parameters,
+<span class="math inline">\(\theta\)</span>, can be the negative value
+such that the variance-covariance matrix, <span class="math inline">\(V_{\theta}\)</span>, remains definable (positive
+definite). The negative lower boundary exists and can be less than or
+equal to <span class="math inline">\(- \sigma^2/\lambda_{max}\)</span>,
+where <span class="math inline">\(\lambda_{max} &gt; 0\)</span> is the
+largest singular value of <span class="math inline">\(ZZ^T\)</span> or
+<span class="math inline">\(Z^TZ\)</span>. If <span class="math inline">\(\theta_k &gt; 0\)</span>, then <span class="math inline">\(\sigma_k^2 = \theta_k\)</span> is definable and
+the mixed model is well-specified. Otherwise, if <span class="math inline">\(\theta_k \le 0\)</span>, the mixed model is
+miss-specified and the <span class="math inline">\(k\)</span>-th
+random-effect component shouldn’t be included.</p>
+<p>Allowing the parameters of variance components to take negative value
+avoids the zero boundary at the null hypothesis for the variance
+components. Consequently, the asymptotic normality of the maximum
+likelihood estimates at the null hypothesis holds under regularity
+conditions, which enables us to use z-statistics or t-statistics for
+hypothesis testing of the fixed effects and variance components. The
+t-statistics for fixed effects are given by <span class="math display">\[\begin{equation}
+\label{eq:tcoef}
+T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} =
+\frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
+\end{equation}\]</span> The t-statistic for a contrast, a linear
+combination of the estimated fixed effects, <span class="math inline">\(c^T\hat\beta\)</span>, is <span class="math display">\[\begin{equation}
+\label{eq:tcontrast}
+T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
+\end{equation}\]</span> The z-statistics for the parameters of variance
+components are given by <span class="math display">\[\begin{equation}
+\label{zvarcomp}
+Z_{\theta_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}}
+\sim N(0, 1),
+\end{equation}\]</span> where <span class="math inline">\(I(\theta)\)</span> is the Fisher information
+matrix.</p>
+<p>We can also use likelihood ratio test (LRT) statistics to test the
+variance components. Let <span class="math inline">\(\theta_{sub}\)</span> be the sub-vector of <span class="math inline">\(\theta\)</span> that is not equal to zero. Let
+<span class="math inline">\(L(\hat\theta_{sub})\)</span> and <span class="math inline">\(L(\hat\theta)\)</span> be the maximum likelihood
+for the sub-model and the full model, respectively. Note that <span class="math inline">\(L(\hat\theta_{sub})\)</span> and <span class="math inline">\(L(\hat\theta)\)</span> depend on <span class="math inline">\(\hat\beta\)</span> for the ML method which is
+suppressed for simplicity of notation. The LRT statistic, <span class="math display">\[\begin{equation}\label{lrtvarcomp}
+\lambda_{LR} = 2[\log(L(\hat\theta)) - \log(L(\hat\theta_{sub}))]
+\sim\chi^2_r,
+\end{equation}\]</span> an asymptotic <span class="math inline">\(\chi^2\)</span> distribution, where <span class="math inline">\(r\)</span> is the number of zero variance
+components. The LRT requires that both sub and full models are fitted by
+the same method, either ML or REML, and the design matrix of fixed
+effects must be the same for both sub and full models when using REML
+method to fit the models.</p>
+</div>
+</div>
+<div id="remarks" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Remarks</h1>
 <p>Building design matrices for fixed and random effects is a key step
 in LMM-based differential expression analysis. Including library size, a
 normalization factor for scRNA-seq, as a fixed effect can help reduce
 p-value inflation. If necessary, we can add principal components as
-fixed effects to further mitigate unknown batch effects.</p>
+fixed effects to further mitigate unknown technical effects.</p>
 <p>In differential expression analysis, modeling samples (subjects) as
 random effects accounts for between-sample variability and within-sample
 correlation. If samples have different effects on gene expression, we
@@ -985,6 +1172,38 @@ can also model them as fixed effects. However, this can lead to
 overfitting when the number of samples (subjects) is large. For
 scRNA-seq data, this may also result in collinearity when the samples
 are nested within an experimental condition.</p>
+</div>
+<div id="session-info" class="section level1 unnumbered smaller">
+<h1 class="unnumbered smaller">Session info</h1>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt; R version 4.4.3 (2025-02-28)</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-apple-darwin20</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Monterey 12.7.6</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib </span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt; time zone: America/Toronto</span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co">#&gt; [1] FLASHMM_1.2.2</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.37     R6_2.6.1          fastmap_1.2.0     Matrix_1.7-3     </span></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.52         lattice_0.22-7    cachem_1.1.0      knitr_1.50       </span></span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="co">#&gt;  [9] htmltools_0.5.8.1 rmarkdown_2.29    lifecycle_1.0.4   cli_3.6.5        </span></span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt; [13] grid_4.4.3        sass_0.4.10       jquerylib_0.1.4   compiler_4.4.3   </span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a><span class="co">#&gt; [17] rstudioapi_0.17.1 tools_4.4.3       evaluate_1.0.4    bslib_0.9.0      </span></span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt; [21] yaml_2.3.10       formatR_1.14      rlang_1.1.6       jsonlite_2.0.0   </span></span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt; [25] MASS_7.3-65</span></span></code></pre></div>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1 class="unnumbered">References</h1>
@@ -1002,6 +1221,12 @@ Information When Block Sizes Are Unequal.”</span> <em>Biometrika</em> 58
 <div id="ref-Searle2006" class="csl-entry">
 Searle, Shayle R., George Casella, and Charles E. McCulloch. 2006.
 <em>Variance Components</em>. New Jersey: John Wiley &amp; Sons, Inc.
+</div>
+<div id="ref-Xu2025" class="csl-entry">
+Xu, Changjiang, Delaram Pouyabahar, Veronique Voisin, Hamed Heydari, and
+Gary D. Bader. 2025. <span>“FLASH-MM: Fast and Scalable Single-Cell
+Differential Expression Analysis Using Linear Mixed-Effects
+Models.”</span> <em>bioRxiv</em>. <a href="https://doi.org/10.1101/2025.04.08.647860">https://doi.org/10.1101/2025.04.08.647860</a>.
 </div>
 </div>
 </div>
